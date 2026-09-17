@@ -58,3 +58,15 @@ Esta revisão acompanha a implementação e não substitui silenciosamente os an
 - Treino autocontido com download HTML, cache v2 validado, tratamento de armazenamento indisponível e prazos de preparação. A causa exata no navegador do usuário não foi capturada: os logs disponíveis registravam recusas de autorização, mas não uma exceção do treino. Foram corrigidos os defeitos observáveis no código e adicionada alternativa independente de Service Worker.
 - Testes de integração em SQLite e testes do script offline/cache com contextos simulados passaram. Não houve QA de navegador nem teste físico de TV Box.
 - Compartilhamento externo do Site permanece privado. Aprovação no jogo não concede automaticamente acesso ao endereço do Sites. Cópias locais de treino não contêm dados oficiais nem são revogáveis remotamente.
+
+## Atualização — aventura e aprendizagem
+
+- Jornada com percentual de portais abertos, cristais, região atual e próxima missão. Portal abre com melhor resultado de 4/5; a próxima região é liberada no servidor. Regiões já iniciadas antes desta regra continuam disponíveis, preservando acesso e histórico.
+- Cada região tem duas missões de dois desafios e um guardião (quinto desafio). A trilha distingue conclusão das atividades da abertura do portal.
+- Tufi atua como guia textual original em introduções, dicas, erros e vitórias. Não há afirmação de ter criado o modelo 3D oficial ausente.
+- Dicas antes de responder e nova tentativa local após erro, com acesso opcional à explicação completa. Apenas a primeira resposta oficial pontua; revisão local não altera ranking ou relatórios.
+- Conquistas derivadas do histórico persistente: primeira missão concluída; dez acertos em regiões de operações; cinco acertos na Fortaleza; melhor resultado 5/5 em todas as regiões; visita às seis regiões. Nenhum badge é criado com dados fictícios.
+- Livro com seis tópicos, explicação, exemplo e atividade sem pontuação. Desbloqueio acompanha as regiões e marca regiões dominadas. Atividades de revisão não são avaliações oficiais nem persistem respostas.
+- Professor vê XP e regiões dominadas dentro da turma, erros por conteúdo, questões com mais erros e evolução diária. Análise limitada às 1.000 missões mais recentes dos alunos atualmente vinculados, com até 14 dias de atividade na amostra. Datas agrupadas em UTC. Os limites ficam visíveis.
+- Textos em 100%, 125% e 150%, botão de som sempre disponível, movimento reduzido, feedback por texto/ícone além da cor, pulo para conteúdo e navegação por teclado. Efeitos leves em cristais, XP, portais e medalhas; confetes desativáveis.
+- Testes de API, regras de desbloqueio/conquistas, agregações pedagógicas, regressão das permissões e treino offline executados. Sem validação visual ou TV Box física nesta atualização.

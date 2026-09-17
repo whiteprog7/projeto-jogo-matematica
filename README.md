@@ -1,8 +1,8 @@
-# Tufi — 0.2.0-beta
+# Tufi — 0.3.0-beta
 
 Jogo educativo de matemática para alunos do 6º ano.
 
-Painel administrativo, aprovação de contas e correção do treino offline.
+Missões narrativas, progressão, conquistas, Livro do Explorador e indicadores pedagógicos.
 
 Consulte [o histórico de versões](CHANGELOG.md) e [a organização do projeto](docs/ORGANIZACAO.md).
 
@@ -60,3 +60,9 @@ O treino offline e o jogo hospedado usam o gerador de `lib/content.ts`; o build 
 ## Limites dos testes
 
 Build, tipagem e testes de API/lógica executados. Não houve teste visual em navegador, teste em hardware TV Box real, validação da impressão em cada navegador, teste de Service Worker offline em aparelho real ou validação WebMCP em um contexto suportado. Conteúdo precisa de revisão pedagógica antes de uso institucional. Os 3.000 casos do gerador verificam estrutura, alternativas distintas e limites do gabarito, não certificam automaticamente a adequação curricular.
+
+## Evolução da aventura
+
+A implementação agora inclui guia textual Tufi, missões narrativas em cinco etapas (duas missões e um guardião por região), dicas e revisão de erros sem pontos adicionais, desbloqueio sequencial validado no servidor, conquistas derivadas de resultados e Livro do Explorador. Regiões previamente visitadas são preservadas. Não houve migração de schema para esses recursos: os indicadores são derivados de `runs`.
+
+O professor acompanha XP/portais por turma, erros por conteúdo/questão e evolução na amostra recente. Novas opções de fonte, som e animações são preferências locais. O site permanece compartilhável por link conforme autorização posterior do proprietário, com autenticação/aprovação obrigatória para recursos online protegidos.

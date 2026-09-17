@@ -1,0 +1,29 @@
+export const chapters=[
+ ['O Cristal Perdido','A Ponte dos Números','O Portal Dourado'],['Sementes em Partes','A Ponte Equivalente','O Guardião das Frações'],['A Trilha dos Polígonos','O Jardim Geométrico','O Cristal do Cume'],['As Engrenagens Adormecidas','O Código do Templo','O Guardião das Operações'],['A Luz da Caverna','O Rio das Medidas','O Guardião das Grandezas'],['A Partilha dos Cristais','A Sequência Secreta','O Enigma Final']
+];
+export function missionName(region:number,step:number){return chapters[region]?.[Math.min(2,Math.floor(step/2))]||'Desafio do conhecimento'}
+export const stories=[
+ ['Tufi: O primeiro cristal sumiu! Conte os recursos para iluminar a trilha.','Tufi: A ponte precisa de energia. Organize os cristais em grupos.','Tufi: O guardião abriu espaço para você. Descubra o que falta para ativar o portal.'],
+ ['Tufi: As sementes precisam ser repartidas sem desperdício. Cada parte importa.','Tufi: Duas pontes parecem diferentes, mas podem ter o mesmo tamanho.','Tufi: Mostre ao guardião como representar a mesma quantidade de outra forma.'],
+ ['Tufi: Os símbolos da trilha escondem pistas nas formas.','Tufi: Meça o jardim e descubra como seus lados se relacionam.','Tufi: O cristal do cume só acende quando você encontra a medida certa.'],
+ ['Tufi: As engrenagens obedecem a uma ordem. Observe qual operação vem primeiro.','Tufi: Um novo código apareceu. Os parênteses indicam por onde começar.','Tufi: Ative o mecanismo final para abrir o templo.'],
+ ['Tufi: Some a energia das lanternas para iluminar a caverna.','Tufi: Precisamos medir o caminho para atravessar o rio.','Tufi: Confira as unidades e ajude o guardião a restaurar a luz.'],
+ ['Tufi: Divida os cristais entre os portais para reunir o grupo.','Tufi: Encontre a regra dos símbolos e revele a próxima pista.','Tufi: Você chegou ao enigma final! Separe o problema em pequenos passos.']
+];
+export function narrative(region:number,step:number){return stories[region]?.[Math.min(2,Math.floor(step/2))]||stories[0][0]}
+export function journey(stats:any[]){const best=Array.from({length:6},(_,i)=>Number(stats.find(s=>s.region===i)?.best||0));let frontier=0;while(frontier<5&&best[frontier]>=400)frontier++;const unlocked=best.map((_,i)=>i<=frontier||stats.some(s=>s.region===i&&Number(s.visits)>0));const mastered=best.filter(b=>b>=400).length;const next=best.findIndex((b,i)=>unlocked[i]&&b<400);return {best,unlocked,mastered,percent:Math.round(mastered/6*100),crystals:best.reduce((a,b)=>a+b/100,0),next:next<0?5:next,frontier}}
+export function achievements(stats:any[]){const j=journey(stats),sum=(field:string,rs:number[])=>stats.filter(s=>rs.includes(s.region)).reduce((n,s)=>n+Number(s[field]||0),0);return [
+ {id:'portal',name:'Primeiro Portal',symbol:'🏅',description:'Conclua uma missão de cinco desafios.',value:sum('finished',[0,1,2,3,4,5]),goal:1},
+ {id:'operations',name:'Mestre das Operações',symbol:'🔥',description:'Acerte 10 desafios no Reino ou no Templo.',value:sum('correct',[0,3]),goal:10},
+ {id:'riddles',name:'Caçador de Enigmas',symbol:'🧩',description:'Resolva 5 desafios da Fortaleza.',value:sum('correct',[5]),goal:5},
+ {id:'crystals',name:'Colecionador',symbol:'💎',description:'Obtenha 5 acertos em cada uma das 6 regiões.',value:j.crystals,goal:30},
+ {id:'explorer',name:'Explorador',symbol:'🌟',description:'Inicie uma missão em cada região.',value:stats.filter(s=>s.visits>0).length,goal:6}
+ ].map(a=>({...a,earned:a.value>=a.goal}));}
+export const lessons=[
+ {title:'Números naturais e comparação',text:'Os números naturais ajudam a contar e ordenar. Compare primeiro as maiores ordens: centenas, dezenas e unidades. Ao somar, você pode decompor os números.',example:'24 + 18 = (20 + 10) + (4 + 8) = 30 + 12 = 42. Já 42 > 24, pois 4 dezenas são mais que 2.',question:'Qual número é maior?',options:['307','370','73'],answer:1,explanation:'370: ambos 307 e 370 têm 3 centenas, mas 370 tem 7 dezenas.'},
+ {title:'Frações e equivalência',text:'O denominador indica em quantas partes iguais dividimos o todo; o numerador indica quantas usamos. Multiplicar as duas partes pelo mesmo número mantém a quantidade.',example:'1/2 = 2/4. Metade de 12 cristais é 12 ÷ 2 = 6.',question:'Qual fração representa a metade?',options:['2/4','1/4','3/4'],answer:0,explanation:'2 das 4 partes iguais representam metade do todo.'},
+ {title:'Geometria, perímetro e área',text:'Perímetro mede o contorno e usa unidades como metros. Área mede a superfície e usa unidades quadradas, como m².',example:'Um retângulo de 3 m por 2 m tem perímetro 3 + 2 + 3 + 2 = 10 m e área 3 × 2 = 6 m².',question:'Qual é a área de um retângulo de 4 m por 3 m?',options:['14 m²','7 m²','12 m²'],answer:2,explanation:'A área é 4 × 3 = 12 m²; 14 m seria o perímetro.'},
+ {title:'Ordem das operações',text:'Resolva os parênteses, depois multiplicações e divisões, depois adições e subtrações. Operações de mesma prioridade seguem da esquerda para a direita.',example:'3 + 4 × 2 = 3 + 8 = 11. Mas (3 + 4) × 2 = 7 × 2 = 14.',question:'Quanto é 5 + 3 × 2?',options:['16','11','13'],answer:1,explanation:'Primeiro 3 × 2 = 6; depois 5 + 6 = 11.'},
+ {title:'Decimais e medidas',text:'A vírgula separa a parte inteira da decimal. Some décimos com décimos e centésimos com centésimos. Confira sempre as unidades.',example:'2,50 + 1,25 = 3,75. Como 1 m = 100 cm, 2 m = 200 cm.',question:'Quanto é 1,50 + 2,25?',options:['3,75','3,25','4,75'],answer:0,explanation:'1 + 2 = 3 e 0,50 + 0,25 = 0,75. Total: 3,75.'},
+ {title:'Estratégias para enigmas',text:'Leia a pergunta, separe os dados, escolha uma operação e confira a resposta. Nas sequências, procure uma regra que valha entre todos os termos.',example:'Na sequência 4, 7, 10, cada termo aumenta 3. O próximo é 13.',question:'Complete: 5, 10, 15, ...',options:['16','25','20'],answer:2,explanation:'A regra é acrescentar 5 a cada termo: 15 + 5 = 20.'}
+];
