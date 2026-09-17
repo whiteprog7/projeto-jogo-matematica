@@ -1,2 +1,2 @@
-import Game from './game';
-export default function Home(){return <Game/>}
+import Access from './access';
+export default function Home(){return <Access/>}

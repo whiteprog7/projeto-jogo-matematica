@@ -1,19 +1,19 @@
-# Tufi — 0.3.0-beta
+# Tufi — 0.4.0-beta
 
 Jogo educativo de matemática para alunos do 6º ano.
 
-Missões narrativas, progressão, conquistas, Livro do Explorador e indicadores pedagógicos.
+Entrada por perfil, cadastro com ID e senha, sessões e autorização pelo administrador.
 
 Consulte [o histórico de versões](CHANGELOG.md) e [a organização do projeto](docs/ORGANIZACAO.md).
 
 
 Implementação web funcional baseada nos documentos fornecidos. React, TypeScript, Vite/Vinext, API server-side e D1/SQLite. Consulte `docs/DECISOES.md` para correções e limites da entrega.
 
-## Executado nesta versão
+## Recursos implementados
 
 - Seis regiões, cinco questões por missão, questões parametrizadas, feedback explicativo, desafio final e resultado.
 - Perfil com nome de aventura, histórico persistente, retomada de missão por até 24 horas, melhor pontuação por região e quatro equipamentos visuais.
-- Entrada em turmas por código; criação de turmas e consultas de professor protegidas no servidor por lista de identidades autorizadas.
+- Entrada em turmas por código; criação de turmas e consultas de professor protegidas no servidor por papel aprovado e vínculo com a turma.
 - Ranking por turma/região, no máximo uma linha por estudante, melhor resultado; opção de desempenho exige pelo menos 80% de acertos.
 - Histórico individual e exportações CSV; impressão formatada permite salvar PDF pelo navegador.
 - Treino separado em `/offline.html`, disponível offline após carregamento/preparação; histórico local sem sincronização ou validade oficial.
@@ -26,8 +26,8 @@ Use Node 24 para os testes que utilizam `node:sqlite`. O gerenciador adotado é 
 - `pnpm install`
 - `pnpm run db:generate` após alterar o schema (migrations já incluídas).
 - `pnpm run build`
-- Para banco local: `node node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_fat_kinsey_walden.sql` uma única vez em um banco vazio.
-- `pnpm run dev` no ambiente de desenvolvimento compatível. A autenticação hospedada vem do dispatcher Sites; o servidor local não simula login real.
+- Para banco local: `node node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_fat_kinsey_walden.sql` uma única vez em um banco vazio. Aplique também as migrações 0001 e 0002 em ordem, cada uma somente uma vez.
+- `pnpm run dev` no ambiente de desenvolvimento compatível. O login usa sessão própria por cookie seguro. Configure os segredos de autenticação no runtime para testar login; testes em memória não usam credenciais reais.
 - `node tests/game.mjs`: integração da API em SQLite em memória com identidade controlada apenas no processo de teste. Nenhum bypass de desenvolvimento existe nas rotas de produção.
 - `pnpm exec tsc --noEmit`
 
@@ -35,11 +35,15 @@ Use Node 24 para os testes que utilizam `node:sqlite`. O gerenciador adotado é 
 
 O painel `/admin` permite aprovar/bloquear alunos e professores, alterar papel, atribuir turma, criar/editar turmas, reatribuir professor, girar código de entrada e consultar históricos. Alterações são registradas em auditoria; o painel mostra as 100 mais recentes. Não há exclusão definitiva de pessoas ou resultados.
 
-A conta proprietária é configurada por `ADMIN_EMAIL`, exclusivamente no servidor, a partir do registro de propriedade fornecido pela plataforma. O formulário nunca define administradores. O e-mail é comparado à identidade autenticada encaminhada pelo dispatcher, não ao nome/e-mail submetido pelo cliente. A configuração antiga `TEACHER_IDS` deixou de autorizar usuários; os papéis e situações ficam no banco. Uma alteração de cadastro não pode conceder aprovação a si mesmo. A conta proprietária não pode ser bloqueada nem rebaixada pelo painel.
+A página inicial apresenta Aluno, Professor e Administrador; `/admin` abre a mesma entrada com Administrador selecionado. A escolha é apenas de interface: as APIs consultam sessão e permissões no servidor. O único administrador é o perfil configurado em `ADMIN_PROFILE_ID`, preservando o histórico do proprietário. Login administrativo: `adm123` ou `ADM-0001`. Não há cadastro ou promoção pública de administradores.
 
-Cadastros novos e anteriores passam a `pending` pela migração; o proprietário continua autorizado. A solicitação de professor só altera `requested_role`, não `role`. Cadastros bloqueados não acessam rotas protegidas mesmo se já tinham uma missão aberta. Usuários pendentes podem editar seu perfil, consultar seu estado e usar o treino local. Os resultados offline continuam sem validade oficial.
+O cadastro de alunos/professores gera um ID `TF-…` e uma senha própria; o perfil nasce `pending`, mesmo se o cliente enviar campos de aprovação. O administrador precisa aprovar o papel e pode bloquear o acesso. O painel permite pesquisar por nome ou ID. Uma conta anterior pode ser vinculada a ID/senha somente após autenticação da identidade antiga pelo dispatcher; informar um e-mail não vincula contas. Nenhum histórico é removido.
 
-A aplicação permanece privada ao proprietário. O compartilhamento do endereço no Sites e a aprovação de pessoas dentro do jogo são permissões distintas; a implementação não abriu o site ao público nem enviou convites.
+`AUTH_PEPPER`, `ADMIN_PASSWORD_HASH` e `ADMIN_PROFILE_ID` são segredos de runtime geridos no Sites. A senha administrativa não está no código, banco, cliente ou arquivos de configuração; seu verificador fica no segredo. Outras senhas têm salt aleatório e PBKDF2-HMAC-SHA256 (100.000 iterações compatíveis com Workers), com pré-processamento HMAC usando pepper separado do banco. Alterar o pepper exige planejar a redefinição de todos os verificadores.
+
+Sessões usam tokens aleatórios de 256 bits, com digest armazenado no banco, validade de 8 horas e cookie `__Host-tufi-session` HttpOnly, Secure, SameSite=Lax. Logout revoga a sessão. POSTs de autenticação/administração exigem origem correspondente. Tentativas de login têm limite por IP e identificador. Bloqueio e papel são consultados novamente nas operações protegidas. As rotas não usam bypass de desenvolvimento. Não há recuperação automática de senha nesta versão.
+
+O endereço permanece público e compartilhável, conforme solicitado; dados e operações do jogo exigem login e aprovação. O treino offline continua público e seus resultados não valem para o ranking oficial. Cadastros pendentes veem apenas ID e situação na entrada.
 
 ## Correção do treino offline
 
@@ -47,13 +51,13 @@ O documento é autocontido e gerado por `node scripts/build-offline.mjs`, també
 
 O Service Worker v2 não espera downloads na instalação, remove o cache v1, usa rede primeiro e guarda somente HTML validado do treino. Não intercepta APIs do jogo/administração nem páginas de login. Falhas de preparação têm prazo e orientação para baixar; não ficam aguardando indefinidamente. O treino também tolera armazenamento negado ou corrompido e cliques duplicados. As cópias baixadas são locais e não podem ser revogadas à distância.
 
-Testes: `node tests/game.mjs`, `node tests/offline.mjs` e `pnpm exec tsc --noEmit`. O teste offline executa o script completo num DOM simulado e as rotinas de cache num contexto simulado; não substitui validação em navegador/TV Box real.
+Testes: `node tests/auth.mjs`, `node tests/game.mjs`, `node tests/offline.mjs` e `pnpm exec tsc --noEmit`. O teste offline executa o script completo num DOM simulado e as rotinas de cache num contexto simulado; não substitui validação em navegador/TV Box real.
 
 ## Assets e tecnologia
 
 `public/world.webp` é cenário original gerado para esta implementação. Não representa o mascote ou logo oficiais. As imagens e o modelo 3D citados no README original não foram anexados. Não foram inventados substitutos oficiais.
 
-Esta versão web não implementa Babylon.js, modelos animados de Tufi, APK nativo para TV Box, Gmail institucional, senhas próprias ou RG/RA. O runtime hospedado usa Workers e D1; Nginx e Node/Express não são requisitos deste runtime. Um backend Node e integração escolar são trabalhos de implantação separados, não recursos já concluídos.
+Esta versão web não implementa Babylon.js, modelos animados de Tufi, APK nativo para TV Box, Gmail institucional, RG/RA. O runtime hospedado usa Workers e D1; Nginx e Node/Express não são requisitos deste runtime. Um backend Node e integração escolar são trabalhos de implantação separados, não recursos já concluídos.
 
 O treino offline e o jogo hospedado usam o gerador de `lib/content.ts`; o build regenera o documento autocontido. Nunca inclua resultados do treino no ranking oficial.
 

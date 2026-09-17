@@ -1,4 +1,4 @@
-import {getChatGPTUser} from '../../chatgpt-auth';
+import {getCurrentUser as getChatGPTUser} from '@/lib/auth';
 import {db,teacherAllowed,adminAllowed} from '@/lib/server';
 import {makeQuestion,publicQuestion,scoreRun,regions,gears,Question} from '@/lib/content';
 import {journey,achievements} from '@/lib/adventure';

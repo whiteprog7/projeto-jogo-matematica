@@ -1,2 +1,2 @@
-import Game from '../game';
-export default function Admin(){return <Game initialView="admin"/>}
+import Access from '../access';
+export default function Admin(){return <Access adminEntry/>}

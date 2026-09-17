@@ -1,10 +1,10 @@
-import {getChatGPTUser} from '../../chatgpt-auth';
+import {getCurrentUser as getChatGPTUser} from '@/lib/auth';
 import {db,adminAllowed} from '@/lib/server';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export async function GET(){try{const u=await getChatGPTUser();if(!u)return reply({error:'Entre na sua conta.'},401);if(!adminAllowed(u))return reply({error:'Somente o administrador pode acessar este painel.'},403);
  const result=await db().batch([
- db().prepare('SELECT p.id,p.name,p.email,p.role,p.requested_role,p.status,p.revision,p.class_id,c.name class_name,(SELECT COUNT(*) FROM runs r WHERE r.user_id=p.id AND r.done=1) missions FROM profiles p LEFT JOIN classes c ON c.id=p.class_id ORDER BY p.status,p.name'),
+ db().prepare('SELECT (SELECT login_id FROM accounts WHERE user_id=p.id) login_id,p.id,p.name,p.email,p.role,p.requested_role,p.status,p.revision,p.class_id,c.name class_name,(SELECT COUNT(*) FROM runs r WHERE r.user_id=p.id AND r.done=1) missions FROM profiles p LEFT JOIN classes c ON c.id=p.class_id ORDER BY p.status,p.name'),
  db().prepare('SELECT c.id,c.name,c.teacher,c.code,p.name teacher_name,(SELECT COUNT(*) FROM profiles s WHERE s.class_id=c.id) students FROM classes c LEFT JOIN profiles p ON p.id=c.teacher ORDER BY c.name'),
  db().prepare('SELECT a.*,p.name target_name FROM audit a LEFT JOIN profiles p ON p.id=a.target ORDER BY created DESC LIMIT 100')]);
  return reply({users:result[0].results,classes:result[1].results,audit:result[2].results,ownerId:u.userId});
@@ -15,7 +15,7 @@ export async function POST(request:Request){try{const u=await getChatGPTUser();i
  if(b.action==='user'){
  if(typeof b.id!=='string'||!['student','teacher'].includes(b.role)||!['pending','approved','blocked'].includes(b.status)||!Number.isInteger(b.revision))return reply({error:'Dados inválidos.'},400);
  const p=await db().prepare('SELECT * FROM profiles WHERE id=?').bind(b.id).first<any>();if(!p)return reply({error:'Cadastro não encontrado.'},404);
- if(p.id===u.userId||p.email?.toLowerCase()===u.email.toLowerCase())return reply({error:'A conta do proprietário não pode ser alterada por este painel.'},400);
+ if(p.id===u.userId)return reply({error:'A conta do proprietário não pode ser alterada por este painel.'},400);
  if(p.revision!==b.revision)return reply({error:'Este cadastro foi alterado. Atualize a lista antes de continuar.'},409);
  const classId=b.classId||null;if(classId!==null&&typeof classId!=='string')return reply({error:'Turma inválida.'},400);if(classId&&!await db().prepare('SELECT id FROM classes WHERE id=?').bind(classId).first())return reply({error:'Turma não encontrada.'},400);
  const detail=JSON.stringify({before:{role:p.role,status:p.status,classId:p.class_id},after:{role:b.role,status:b.status,classId}});
