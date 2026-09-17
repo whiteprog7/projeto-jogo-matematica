@@ -1,0 +1,2 @@
+import {offlineDocument} from '@/lib/offline-document';
+export function GET(request:Request){const download=new URL(request.url).searchParams.get('download')==='1';return new Response(offlineDocument,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff',...(download?{'Content-Disposition':'attachment; filename="Tufi-Treino-Offline.html"'}:{})}})}

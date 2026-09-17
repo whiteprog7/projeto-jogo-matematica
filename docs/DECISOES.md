@@ -49,3 +49,12 @@ Esta revisão acompanha a implementação e não substitui silenciosamente os an
 - 3.000 questões geradas com verificações estruturais e alternativas distintas.
 - Inspeção da migração SQL e da imagem do cenário.
 - Sem QA de navegador, hardware ou WebMCP; suporte WebMCP é opcional e só expõe leitura do progresso já visível.
+
+## Atualização — administração e correção offline
+
+- Painel administrativo `/admin` com aprovação de alunos/professores, bloqueio reversível, atribuição de turma, reatribuição de professor, renovação de código e auditoria. A lista estática `TEACHER_IDS` foi substituída por autorização persistente no banco; `ADMIN_EMAIL` identifica o proprietário a partir da identidade autenticada.
+- Somente o proprietário é administrador. Nenhum primeiro visitante, formulário ou solicitação de papel recebe esse privilégio. A conta proprietária está protegida contra bloqueio pelo próprio painel.
+- Registros anteriores entram como pendentes, preservando dados; o proprietário mantém acesso para aprová-los. Os testes verificam que trocar o perfil não desbloqueia contas e que papéis não podem ser elevados pelo cliente.
+- Treino autocontido com download HTML, cache v2 validado, tratamento de armazenamento indisponível e prazos de preparação. A causa exata no navegador do usuário não foi capturada: os logs disponíveis registravam recusas de autorização, mas não uma exceção do treino. Foram corrigidos os defeitos observáveis no código e adicionada alternativa independente de Service Worker.
+- Testes de integração em SQLite e testes do script offline/cache com contextos simulados passaram. Não houve QA de navegador nem teste físico de TV Box.
+- Compartilhamento externo do Site permanece privado. Aprovação no jogo não concede automaticamente acesso ao endereço do Sites. Cópias locais de treino não contêm dados oficiais nem são revogáveis remotamente.

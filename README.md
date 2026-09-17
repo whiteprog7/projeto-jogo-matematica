@@ -1,8 +1,8 @@
-# Tufi — 0.1.0-beta
+# Tufi — 0.2.0-beta
 
 Jogo educativo de matemática para alunos do 6º ano.
 
-Base do jogo: regiões, missões, turmas, ranking e histórico.
+Painel administrativo, aprovação de contas e correção do treino offline.
 
 Consulte [o histórico de versões](CHANGELOG.md) e [a organização do projeto](docs/ORGANIZACAO.md).
 
@@ -31,11 +31,23 @@ Use Node 24 para os testes que utilizam `node:sqlite`. O gerenciador adotado é 
 - `node tests/game.mjs`: integração da API em SQLite em memória com identidade controlada apenas no processo de teste. Nenhum bypass de desenvolvimento existe nas rotas de produção.
 - `pnpm exec tsc --noEmit`
 
-## Autorização de professor
+## Administração e autorização
 
-`TEACHER_IDS` é uma variável exclusivamente de servidor: lista separada por vírgulas dos IDs de usuários da plataforma cuja função de professor foi previamente confirmada pela escola. Padrão vazio, sem concessão automática. Configure pela gestão de ambiente do Site, nunca por parâmetro do cliente. A escola deve verificar quem é professor por um procedimento institucional, e não apenas aceitar um número de RG ou domínio de e-mail.
+O painel `/admin` permite aprovar/bloquear alunos e professores, alterar papel, atribuir turma, criar/editar turmas, reatribuir professor, girar código de entrada e consultar históricos. Alterações são registradas em auditoria; o painel mostra as 100 mais recentes. Não há exclusão definitiva de pessoas ou resultados.
 
-A publicação inicial é privada e não está aberta à escola. O responsável precisa definir quem poderá acessar e providenciar as identidades autorizadas antes de uso escolar. A existência da rota não significa que um professor esteja configurado.
+A conta proprietária é configurada por `ADMIN_EMAIL`, exclusivamente no servidor, a partir do registro de propriedade fornecido pela plataforma. O formulário nunca define administradores. O e-mail é comparado à identidade autenticada encaminhada pelo dispatcher, não ao nome/e-mail submetido pelo cliente. A configuração antiga `TEACHER_IDS` deixou de autorizar usuários; os papéis e situações ficam no banco. Uma alteração de cadastro não pode conceder aprovação a si mesmo. A conta proprietária não pode ser bloqueada nem rebaixada pelo painel.
+
+Cadastros novos e anteriores passam a `pending` pela migração; o proprietário continua autorizado. A solicitação de professor só altera `requested_role`, não `role`. Cadastros bloqueados não acessam rotas protegidas mesmo se já tinham uma missão aberta. Usuários pendentes podem editar seu perfil, consultar seu estado e usar o treino local. Os resultados offline continuam sem validade oficial.
+
+A aplicação permanece privada ao proprietário. O compartilhamento do endereço no Sites e a aprovação de pessoas dentro do jogo são permissões distintas; a implementação não abriu o site ao público nem enviou convites.
+
+## Correção do treino offline
+
+O documento é autocontido e gerado por `node scripts/build-offline.mjs`, também executado pelo build normal. `/api/practice` serve o treino e `?download=1` entrega o HTML para abrir em `file://` sem rede ou login. `/offline.html` continua como endereço compatível.
+
+O Service Worker v2 não espera downloads na instalação, remove o cache v1, usa rede primeiro e guarda somente HTML validado do treino. Não intercepta APIs do jogo/administração nem páginas de login. Falhas de preparação têm prazo e orientação para baixar; não ficam aguardando indefinidamente. O treino também tolera armazenamento negado ou corrompido e cliques duplicados. As cópias baixadas são locais e não podem ser revogadas à distância.
+
+Testes: `node tests/game.mjs`, `node tests/offline.mjs` e `pnpm exec tsc --noEmit`. O teste offline executa o script completo num DOM simulado e as rotinas de cache num contexto simulado; não substitui validação em navegador/TV Box real.
 
 ## Assets e tecnologia
 
@@ -43,7 +55,7 @@ A publicação inicial é privada e não está aberta à escola. O responsável 
 
 Esta versão web não implementa Babylon.js, modelos animados de Tufi, APK nativo para TV Box, Gmail institucional, senhas próprias ou RG/RA. O runtime hospedado usa Workers e D1; Nginx e Node/Express não são requisitos deste runtime. Um backend Node e integração escolar são trabalhos de implantação separados, não recursos já concluídos.
 
-O treino offline e o jogo hospedado usam o mesmo gerador, publicado em `public/offline-content.js`; regenere esse arquivo a partir de `lib/content.ts` quando editar as questões. Nunca inclua resultados do treino no ranking oficial.
+O treino offline e o jogo hospedado usam o gerador de `lib/content.ts`; o build regenera o documento autocontido. Nunca inclua resultados do treino no ranking oficial.
 
 ## Limites dos testes
 
