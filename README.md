@@ -1,15 +1,10 @@
-# Tufi — 0.4.0-beta
+> v0.5.0-beta: login por e-mail confirmado, confirmação de endereço e redefinição de senha. Envio real depende de Resend e remetente autorizado; veja [configuração e limites](docs/RECUPERACAO_EMAIL.md).
 
-Jogo educativo de matemática para alunos do 6º ano.
-
-Entrada por perfil, cadastro com ID e senha, sessões e autorização pelo administrador.
-
-Consulte [o histórico de versões](CHANGELOG.md) e [a organização do projeto](docs/ORGANIZACAO.md).
-
+# Tufi e o Enigma dos Números
 
 Implementação web funcional baseada nos documentos fornecidos. React, TypeScript, Vite/Vinext, API server-side e D1/SQLite. Consulte `docs/DECISOES.md` para correções e limites da entrega.
 
-## Recursos implementados
+## Executado nesta versão
 
 - Seis regiões, cinco questões por missão, questões parametrizadas, feedback explicativo, desafio final e resultado.
 - Perfil com nome de aventura, histórico persistente, retomada de missão por até 24 horas, melhor pontuação por região e quatro equipamentos visuais.
@@ -26,7 +21,7 @@ Use Node 24 para os testes que utilizam `node:sqlite`. O gerenciador adotado é 
 - `pnpm install`
 - `pnpm run db:generate` após alterar o schema (migrations já incluídas).
 - `pnpm run build`
-- Para banco local: `node node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_fat_kinsey_walden.sql` uma única vez em um banco vazio. Aplique também as migrações 0001 e 0002 em ordem, cada uma somente uma vez.
+- Para banco local: `node node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_fat_kinsey_walden.sql` uma única vez em um banco vazio.
 - `pnpm run dev` no ambiente de desenvolvimento compatível. O login usa sessão própria por cookie seguro. Configure os segredos de autenticação no runtime para testar login; testes em memória não usam credenciais reais.
 - `node tests/game.mjs`: integração da API em SQLite em memória com identidade controlada apenas no processo de teste. Nenhum bypass de desenvolvimento existe nas rotas de produção.
 - `pnpm exec tsc --noEmit`
@@ -41,7 +36,7 @@ O cadastro de alunos/professores gera um ID `TF-…` e uma senha própria; o per
 
 `AUTH_PEPPER`, `ADMIN_PASSWORD_HASH` e `ADMIN_PROFILE_ID` são segredos de runtime geridos no Sites. A senha administrativa não está no código, banco, cliente ou arquivos de configuração; seu verificador fica no segredo. Outras senhas têm salt aleatório e PBKDF2-HMAC-SHA256 (100.000 iterações compatíveis com Workers), com pré-processamento HMAC usando pepper separado do banco. Alterar o pepper exige planejar a redefinição de todos os verificadores.
 
-Sessões usam tokens aleatórios de 256 bits, com digest armazenado no banco, validade de 8 horas e cookie `__Host-tufi-session` HttpOnly, Secure, SameSite=Lax. Logout revoga a sessão. POSTs de autenticação/administração exigem origem correspondente. Tentativas de login têm limite por IP e identificador. Bloqueio e papel são consultados novamente nas operações protegidas. As rotas não usam bypass de desenvolvimento. Não há recuperação automática de senha nesta versão.
+Sessões usam tokens aleatórios de 256 bits, com digest armazenado no banco, validade de 8 horas e cookie `__Host-tufi-session` HttpOnly, Secure, SameSite=Lax. Logout revoga a sessão. POSTs de autenticação/administração exigem origem correspondente. Tentativas de login têm limite por IP e identificador. Bloqueio e papel são consultados novamente nas operações protegidas. As rotas não usam bypass de desenvolvimento. A recuperação por e-mail foi implementada na v0.5.0-beta e depende da configuração do remetente. Consulte `docs/RECUPERACAO_EMAIL.md`.
 
 O endereço permanece público e compartilhável, conforme solicitado; dados e operações do jogo exigem login e aprovação. O treino offline continua público e seus resultados não valem para o ranking oficial. Cadastros pendentes veem apenas ID e situação na entrada.
 

@@ -10,3 +10,7 @@ A `main` contém a versão atual. Cada branch `versoes/v…` guarda uma etapa re
 | 0.4.0-beta | Entrada por perfil, cadastro com ID e senha, sessões e autorização pelo administrador. | [Abrir versão](https://github.com/whiteprog7/projeto-jogo-matematica/tree/versoes/v0.4.0-beta) |
 
 As versões anteriores são referências históricas; use a versão atual para continuar o desenvolvimento. Elas não recebem automaticamente correções posteriores. O envio ao GitHub não altera o jogo publicado nem transfere seu banco de dados.
+
+## 0.5.0-beta
+
+Login por e-mail confirmado, vínculo de e-mail e recuperação de senha com links de uso único. A entrega inclui implementação e testes simulados; envio real depende da configuração do provedor e remetente. [Abrir versão](https://github.com/whiteprog7/projeto-jogo-matematica/tree/versoes/v0.5.0-beta).

@@ -27,13 +27,14 @@ export async function getCurrentUser():Promise<ChatGPTUser|null>{
  return p?{userId:p.id,displayName:p.name,fullName:p.name,email:p.email}:null;
 }
 export async function accountInfo(user:ChatGPTUser){
- const p=await db().prepare('SELECT p.id,p.name,p.role,p.requested_role,p.status,a.login_id FROM profiles p LEFT JOIN accounts a ON a.user_id=p.id WHERE p.id=?').bind(user.userId).first<any>();
- if(!p)return null;const admin=adminAllowed(user);return {id:p.login_id||(admin?'ADM-0001':p.id),name:p.name,role:admin?'admin':p.status==='approved'?p.role:p.requested_role,status:admin?'approved':p.status};
+ const p=await db().prepare('SELECT p.id,p.name,p.role,p.requested_role,p.status,a.login_id,a.email account_email,a.email_verified FROM profiles p LEFT JOIN accounts a ON a.user_id=p.id WHERE p.id=?').bind(user.userId).first<any>();
+ if(!p)return null;const admin=adminAllowed(user);return {email:p.account_email||null,emailVerified:p.email_verified===1,id:p.login_id||(admin?'ADM-0001':p.id),name:p.name,role:admin?'admin':p.status==='approved'?p.role:p.requested_role,status:admin?'approved':p.status};
 }
-export async function issueSession(userId:string){
- const token=randomToken(),now=Date.now();await db().batch([
+export async function issueSession(userId:string,expectedHash?:string){
+ const token=randomToken(),now=Date.now();const result=await db().batch([
  db().prepare('DELETE FROM sessions WHERE expires<=?').bind(now),
- db().prepare('INSERT INTO sessions(token_hash,user_id,expires) VALUES(?,?,?)').bind(await digest(token),userId,now+8*3600000)]);
+ db().prepare('INSERT INTO sessions(token_hash,user_id,expires) SELECT ?,?,? WHERE ? IS NULL OR COALESCE((SELECT password_hash FROM accounts WHERE user_id=?),?)=?').bind(await digest(token),userId,now+8*3600000,expectedHash||null,userId,userId===config().ADMIN_PROFILE_ID?config().ADMIN_PASSWORD_HASH:null,expectedHash||null)]);
+ if(!result[1].meta.changes)throw new Error('Credentials changed');
  return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=28800`;
 }
 export const clearCookie=()=>`${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;

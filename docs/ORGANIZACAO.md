@@ -11,7 +11,7 @@
 
 ## Versões
 
-`main` recebe o código atual. As branches `versoes/v0.1.0-beta` a `versoes/v0.4.0-beta` preservam quatro etapas reais do desenvolvimento. Para uma nova alteração, crie uma branch a partir de `main`, revise e integre o resultado antes de identificar a próxima versão. Não sobrescreva as branches históricas.
+`main` recebe o código atual. As branches `versoes/v0.1.0-beta` a `versoes/v0.5.0-beta` preservam cinco etapas reais do desenvolvimento. Para uma nova alteração, crie uma branch a partir de `main`, revise e integre o resultado antes de identificar a próxima versão. Não sobrescreva as branches históricas.
 
 ## Executar
 
