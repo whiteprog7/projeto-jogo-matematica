@@ -26,19 +26,19 @@ Use Node 24 para os testes que utilizam `node:sqlite`. O gerenciador adotado é 
 - `node tests/game.mjs`: integração da API em SQLite em memória com identidade controlada apenas no processo de teste. Nenhum bypass de desenvolvimento existe nas rotas de produção.
 - `pnpm exec tsc --noEmit`
 
-## Administração e autorização
+## Administração de contas
 
-O painel `/admin` permite aprovar/bloquear alunos e professores, alterar papel, atribuir turma, criar/editar turmas, reatribuir professor, girar código de entrada e consultar históricos. Alterações são registradas em auditoria; o painel mostra as 100 mais recentes. Não há exclusão definitiva de pessoas ou resultados.
+O painel `/admin` mostra o login e o e-mail confirmado das contas, permite bloquear alunos e professores, alterar papel, atribuir turma, redefinir senhas, excluir perfis, criar/editar turmas, reatribuir professor, girar código de entrada e consultar históricos. A senha atual nunca é recuperável; a redefinição cria uma senha temporária exibida uma única vez, revoga sessões e remove tokens de recuperação. A exclusão remove a conta, as sessões, os tokens, o progresso e as partidas. Alterações são registradas em auditoria; o painel mostra as 100 mais recentes.
 
 A página inicial apresenta Aluno, Professor e Administrador; `/admin` abre a mesma entrada com Administrador selecionado. A escolha é apenas de interface: as APIs consultam sessão e permissões no servidor. O único administrador é o perfil configurado em `ADMIN_PROFILE_ID`, preservando o histórico do proprietário. Login administrativo: `adm123` ou `ADM-0001`. Não há cadastro ou promoção pública de administradores.
 
-O cadastro de alunos/professores gera um ID `TF-…` e uma senha própria; o perfil nasce `pending`, mesmo se o cliente enviar campos de aprovação. O administrador precisa aprovar o papel e pode bloquear o acesso. O painel permite pesquisar por nome ou ID. Uma conta anterior pode ser vinculada a ID/senha somente após autenticação da identidade antiga pelo dispatcher; informar um e-mail não vincula contas. Nenhum histórico é removido.
+O cadastro de alunos/professores gera um ID `TF-…`, salva o papel selecionado e libera o acesso imediatamente. O administrador ainda pode bloquear uma conta ou alterar seu papel. Uma conta anterior pode ser vinculada a ID/senha somente após autenticação da identidade antiga pelo dispatcher; informar um e-mail não vincula contas.
 
 `AUTH_PEPPER`, `ADMIN_PASSWORD_HASH` e `ADMIN_PROFILE_ID` são segredos de runtime geridos no Sites. A senha administrativa não está no código, banco, cliente ou arquivos de configuração; seu verificador fica no segredo. Outras senhas têm salt aleatório e PBKDF2-HMAC-SHA256 (100.000 iterações compatíveis com Workers), com pré-processamento HMAC usando pepper separado do banco. Alterar o pepper exige planejar a redefinição de todos os verificadores.
 
 Sessões usam tokens aleatórios de 256 bits, com digest armazenado no banco, validade de 8 horas e cookie `__Host-tufi-session` HttpOnly, Secure, SameSite=Lax. Logout revoga a sessão. POSTs de autenticação/administração exigem origem correspondente. Tentativas de login têm limite por IP e identificador. Bloqueio e papel são consultados novamente nas operações protegidas. As rotas não usam bypass de desenvolvimento. A recuperação por e-mail foi implementada na v0.5.0-beta e depende da configuração do remetente. Consulte `docs/RECUPERACAO_EMAIL.md`.
 
-O endereço permanece público e compartilhável, conforme solicitado; dados e operações do jogo exigem login e aprovação. O treino offline continua público e seus resultados não valem para o ranking oficial. Cadastros pendentes veem apenas ID e situação na entrada.
+O endereço permanece público e compartilhável, conforme solicitado; dados e operações do jogo exigem login. O treino offline continua público e seus resultados não valem para o ranking oficial.
 
 ## Correção do treino offline
 

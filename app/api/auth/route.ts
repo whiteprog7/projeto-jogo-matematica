@@ -50,7 +50,7 @@ export async function POST(request:Request){try{
  const userId=legacy?.userId||crypto.randomUUID(),loginId='TF-'+crypto.randomUUID().replaceAll('-','').slice(0,16).toUpperCase();
  const passwordHash=await hashPassword(b.password);
  const statements=[];
- if(!legacy)statements.push(db().prepare("INSERT INTO profiles(id,name,email,role,requested_role,status) VALUES(?,?,'','student',?,'pending')").bind(userId,name,b.role));
+ if(!legacy)statements.push(db().prepare("INSERT INTO profiles(id,name,email,role,requested_role,status) VALUES(?,?,'',?,?, 'approved')").bind(userId,name,b.role,b.role));
  statements.push(db().prepare('INSERT INTO accounts(user_id,login_id,password_hash,created) VALUES(?,?,?,?)').bind(userId,loginId,passwordHash,Date.now()));
  await db().batch(statements);
  const account=await accountInfo({userId,email:'',displayName:name,fullName:name});
