@@ -42,6 +42,10 @@ Sessões usam tokens aleatórios de 256 bits, com digest armazenado no banco, va
 
 O endereço permanece público e compartilhável, conforme solicitado; dados e operações do jogo exigem login. O treino offline continua público e seus resultados não valem para o ranking oficial.
 
+## Bônus dos equipamentos
+
+Os equipamentos conquistados com XP têm efeitos pedagógicos durante as missões: a Pulseira numérica libera uma dica curta, a Mochila do explorador abre uma orientação ampliada, o Compasso do estrategista elimina uma alternativa incorreta por desafio e a Insígnia do conhecimento permite revisar a escolha antes da confirmação. O uso do Compasso é validado e registrado no servidor, inclusive quando a missão é retomada.
+
 ## Correção do treino offline
 
 O documento é autocontido e gerado por `node scripts/build-offline.mjs`, também executado pelo build normal. `/api/practice` serve o treino e `?download=1` entrega o HTML para abrir em `file://` sem rede ou login. `/offline.html` continua como endereço compatível.
