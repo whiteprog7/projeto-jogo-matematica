@@ -4,7 +4,8 @@
     { name: 'Montanhas da Geometria', topic: 'Formas e medidas', symbol: '△', color: '#9cbcfb', guardian: 'Guardião dos Cristais', lesson: 'Perímetro é a soma dos lados. A área de um retângulo é base × altura.', quest: 'Alinhe os cristais geométricos para alcançar o cume.' },
     { name: 'Templo das Operações', topic: 'Expressões numéricas', symbol: '×', color: '#eab985', guardian: 'Guardião do Templo', lesson: 'A ordem importa: parênteses primeiro, depois multiplicação e divisão, depois adição e subtração.', quest: 'Ative os mecanismos antigos do templo.' },
     { name: 'Cavernas dos Desafios', topic: 'Decimais e grandezas', symbol: '÷', color: '#b1a8f4', guardian: 'Guardião das Medidas', lesson: 'Um metro tem 100 centímetros. Ao somar decimais, alinhe as vírgulas.', quest: 'Ilumine a caverna usando medidas e raciocínio.' },
-    { name: 'Fortaleza dos Enigmas', topic: 'Revisão e raciocínio', symbol: '∞', color: '#efce6d', guardian: 'Guardião do Conhecimento', lesson: 'Leia o problema, escolha a operação e confira se o resultado faz sentido.', quest: 'Reúna tudo o que aprendeu e liberte a energia do conhecimento.' }
+    { name: 'Fortaleza dos Enigmas', topic: 'Revisão e raciocínio', symbol: '∞', color: '#efce6d', guardian: 'Guardião do Conhecimento', lesson: 'Leia o problema, escolha a operação e confira se o resultado faz sentido.', quest: 'Reúna tudo o que aprendeu e liberte a energia do conhecimento.' },
+    { name: 'Reino da Divisibilidade', topic: 'Múltiplos, divisores e números primos', symbol: '✦', color: '#74e5d1', guardian: 'Guardião dos Divisores', lesson: 'Um divisor forma grupos exatos, sem resto. Use as regras de divisibilidade para investigar números.', quest: 'Decifre os números do portal secreto e estabilize o novo mundo.' }
 ];
 const gears = [
     { name: 'Pulseira numérica', symbol: '＋', xp: 0, level: 'Aprendiz', bonus: 'Revela uma dica curta do Tufi em cada desafio.' },
@@ -82,17 +83,54 @@ function makeQuestion(region, stage) {
         else
             number(`Uma sala tem ${a} fileiras com ${b} lugares. ${b} lugares estão vazios. Quantas pessoas estão sentadas?`, a * b - b, `Primeiro calcule os lugares: ${a} × ${b} = ${a * b}. Depois subtraia os vazios: ${a * b} − ${b} = ${a * b - b}.`);
     }
+    if (region === 6) {
+        if (stage === 0) {
+            const n = a * b;
+            text = `Qual número é divisor de ${n}?`;
+            answer = String(b);
+            wrong = [String(n + 1), String(n + 2), String(n + 3)];
+            explanation = `${b} é divisor de ${n}, pois ${n} ÷ ${b} = ${a}, sem resto.`;
+        }
+        else if (stage === 1) {
+            const n = (a * 2) * 5;
+            text = `${n} é divisível por 5?`;
+            answer = 'Sim, porque termina em 0 ou 5';
+            wrong = ['Não, porque é par', 'Sim, porque a soma dos algarismos é par', 'Não, porque é maior que 10'];
+            explanation = `Todo número terminado em 0 ou 5 é divisível por 5. Portanto, ${n} é divisível por 5.`;
+        }
+        else if (stage === 2) {
+            const n = a * 3;
+            text = `Qual é um múltiplo de ${a}?`;
+            answer = String(n);
+            wrong = [String(n + 1), String(n + 2), String(Math.max(1, n - a + 1))];
+            explanation = `${n} é múltiplo de ${a}, pois ${a} × 3 = ${n}.`;
+        }
+        else if (stage === 3) {
+            text = 'Qual destes números é primo?';
+            answer = '13';
+            wrong = ['12', '15', '21'];
+            explanation = '13 só pode ser dividido exatamente por 1 e por 13, por isso é primo.';
+        }
+        else {
+            const n = a * b;
+            text = `O portal tem ${n} cristais. Eles podem ser separados igualmente em ${b} grupos?`;
+            answer = `Sim, ${a} em cada grupo`;
+            wrong = ['Não, sobra 1', `Sim, ${a + 1} em cada grupo`, `Não, ${n} é primo`];
+            explanation = `Sim. ${n} ÷ ${b} = ${a}, então não sobra nenhum cristal.`;
+        }
+    }
     const options = [answer, ...wrong];
     for (let i = options.length - 1; i > 0; i--) {
         let j = rand(i + 1);
         [options[i], options[j]] = [options[j], options[i]];
     }
-    const hints = [stage < 2 ? 'Separe dezenas e unidades. Some cada parte e reúna os resultados.' : stage < 4 ? 'Cada caixa tem a mesma quantidade. Que operação representa grupos iguais?' : 'Compare o total necessário com o que já está no portal. O que falta?', stage % 2 === 0 ? 'Observe o numerador. Pelo que ele foi multiplicado? Faça o mesmo com o denominador.' : 'Divida o total pelo número de partes iguais.', stage === 0 ? 'Hexa é um prefixo usado para seis. Conte os lados.' : stage === 3 ? 'Pense no canto de um quadrado.' : 'A pergunta pede contorno (somar lados) ou superfície (multiplicar medidas)?', stage % 2 ? 'Resolva primeiro o que está dentro dos parênteses.' : 'Faça a multiplicação antes da adição.', stage % 2 ? 'Cada metro contém cem centímetros.' : 'Alinhe as vírgulas e some inteiros e centésimos separadamente.', stage < 2 ? 'Repartir igualmente significa dividir o total pelo número de grupos.' : stage < 4 ? 'Subtraia dois termos vizinhos para descobrir quanto a sequência cresce.' : 'Calcule todos os lugares e depois retire os vazios.'];
+    const hints = [stage < 2 ? 'Separe dezenas e unidades. Some cada parte e reúna os resultados.' : stage < 4 ? 'Cada caixa tem a mesma quantidade. Que operação representa grupos iguais?' : 'Compare o total necessário com o que já está no portal. O que falta?', stage % 2 === 0 ? 'Observe o numerador. Pelo que ele foi multiplicado? Faça o mesmo com o denominador.' : 'Divida o total pelo número de partes iguais.', stage === 0 ? 'Hexa é um prefixo usado para seis. Conte os lados.' : stage === 3 ? 'Pense no canto de um quadrado.' : 'A pergunta pede contorno (somar lados) ou superfície (multiplicar medidas)?', stage % 2 ? 'Resolva primeiro o que está dentro dos parênteses.' : 'Faça a multiplicação antes da adição.', stage % 2 ? 'Cada metro contém cem centímetros.' : 'Alinhe as vírgulas e some inteiros e centésimos separadamente.', stage < 2 ? 'Repartir igualmente significa dividir o total pelo número de grupos.' : stage < 4 ? 'Subtraia dois termos vizinhos para descobrir quanto a sequência cresce.' : 'Calcule todos os lugares e depois retire os vazios.', stage < 2 ? 'Um divisor divide o número sem deixar resto. Teste a divisão.' : stage < 4 ? 'Múltiplos aparecem ao multiplicar um número por 1, 2, 3 e assim por diante.' : 'Separe em grupos iguais e verifique se sobra algum cristal.'];
     return { text, options, correct: options.indexOf(answer), explanation, hint: hints[region] };
 }
 function publicQuestion(q) { var _a, _b; return { text: q.text, options: q.options, hint: q.hint || 'Leia com calma e separe os dados antes de escolher a operação.', eliminated: (_b = (_a = q.bonus) === null || _a === void 0 ? void 0 : _a.indices) !== null && _b !== void 0 ? _b : [] }; }
 function scoreRun(correct) { return correct * 100; }
 
+regions.splice(6); // O Sétimo Sinal pertence à jornada online.
 (function(){
 const $=s=>document.querySelector(s);let step=0,correct=0,region=0,question,answered=false,finished=false;
 regions.forEach((r,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=r.name;$('#region').append(o)});

@@ -46,6 +46,10 @@ O endereço permanece público e compartilhável, conforme solicitado; dados e o
 
 Os nove equipamentos conquistados com XP têm efeitos pedagógicos durante as missões. Além da Pulseira, Mochila, Compasso e Insígnia, esta versão adiciona o Cristal de Proteção (checklist de raciocínio), a Ampulheta Mágica (resolução em três passos), o Mapa Antigo (estratégia da região), a Poção de Revisão (exemplo resolvido) e a Chave Dourada (elimina duas alternativas incorretas). Os bônus de eliminação são validados e registrados no servidor, inclusive quando a missão é retomada.
 
+## O Sétimo Sinal
+
+O Reino da Divisibilidade é uma expansão secreta do conteúdo de 6º ano. Ele só aparece depois que o aluno abre os seis portais conhecidos, alcança 2.600 XP nesses mundos e resolve pelo menos cinco enigmas na Fortaleza. As últimas missões da Fortaleza apresentam pistas narrativas antes da revelação. O novo mundo trabalha múltiplos, divisores, critérios de divisibilidade e números primos, com missão, guardião, ranking, histórico, Livro do Explorador e relatórios do professor.
+
 ## Correção do treino offline
 
 O documento é autocontido e gerado por `node scripts/build-offline.mjs`, também executado pelo build normal. `/api/practice` serve o treino e `?download=1` entrega o HTML para abrir em `file://` sem rede ou login. `/offline.html` continua como endereço compatível.
