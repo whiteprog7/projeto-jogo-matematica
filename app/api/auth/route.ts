@@ -30,12 +30,10 @@ export async function POST(request:Request){try{
  const userId=adminLogin?config().ADMIN_PROFILE_ID:a.user_id;
  if(!userId)return reply({error:'A conta administrativa ainda não está configurada.'},503);
  if(adminLogin){
- if(b.role!=='admin')return reply({error:'Esta conta deve entrar como Administrador.'},403);
  await db().prepare("INSERT INTO profiles(id,name,email,role,requested_role,status) VALUES(?,'Administrador','','student','student','approved') ON CONFLICT(id) DO NOTHING").bind(userId).run();
  }
  const u={userId,email:'',displayName:'',fullName:null};const account=await accountInfo(u);
  if(!account)return reply({error:'Conta indisponível.'},403);
- if(account.role!==b.role)return reply({error:'Selecione o tipo correto da sua conta.'},403);
  if(account.status==='blocked')return reply({error:'Conta bloqueada. Fale com o administrador.'},403);
  return reply({account},200,await issueSession(userId,stored));
  }

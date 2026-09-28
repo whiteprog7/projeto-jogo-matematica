@@ -34,7 +34,7 @@ export async function POST(request:Request){try{const u=await getChatGPTUser();i
  if(b.action==='resetPassword'){
   if(typeof b.id!=='string'||b.id===u.userId)return reply({error:'Conta inválida para redefinição.'},400);
   const account=await db().prepare('SELECT a.login_id,p.name FROM accounts a JOIN profiles p ON p.id=a.user_id WHERE a.user_id=?').bind(b.id).first<any>();if(!account)return reply({error:'Conta não encontrada.'},404);
-  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#';const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);let temporary='';for(const value of bytes)temporary+=alphabet[value%alphabet.length];
+  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);let temporary='';for(const value of bytes)temporary+=alphabet[value%alphabet.length];
   const passwordHash=await hashPassword(temporary);
   await db().batch([db().prepare('UPDATE accounts SET password_hash=? WHERE user_id=?').bind(passwordHash,b.id),db().prepare('DELETE FROM sessions WHERE user_id=?').bind(b.id),db().prepare('DELETE FROM email_tokens WHERE user_id=?').bind(b.id),db().prepare('INSERT INTO audit(id,actor,target,action,details,created) VALUES(?,?,?,?,?,?)').bind(auditId,u.userId,b.id,'resetPassword',JSON.stringify({loginId:account.login_id}),time)]);
   return reply({ok:true,temporary});

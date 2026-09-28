@@ -6,7 +6,7 @@ import AccountEmail from './account-email';
 type Role='student'|'teacher'|'admin';
 type Account={id:string;name:string;role:Role;status:string;email?:string|null;emailVerified?:boolean};
 const roles=[{id:'student' as Role,label:'Aluno',description:'Explore, aprenda e abra portais.',Icon:UserRound},{id:'teacher' as Role,label:'Professor',description:'Acompanhe sua turma e a evolução.',Icon:GraduationCap},{id:'admin' as Role,label:'Administrador',description:'Autorize contas e gerencie o jogo.',Icon:ShieldCheck}];
-export async function authRequest(data?:unknown){const r=await fetch('/api/auth',{method:data?'POST':'GET',credentials:'same-origin',headers:data?{'Content-Type':'application/json'}:undefined,body:data?JSON.stringify(data):undefined});const d:any=await r.json();if(!r.ok)throw new Error(d.error||'Não foi possível entrar.');return d}
+export async function authRequest(data?:unknown){let r:Response;try{r=await fetch('/api/auth',{method:data?'POST':'GET',credentials:'same-origin',headers:data?{'Content-Type':'application/json'}:undefined,body:data?JSON.stringify(data):undefined,signal:AbortSignal.timeout(15000)})}catch{throw new Error('A conexão demorou demais. Tente entrar novamente.')}const d:any=await r.json();if(!r.ok)throw new Error(d.error||'Não foi possível entrar.');return d}
 export default function Access({adminEntry=false}:{adminEntry?:boolean}){
  const [role,setRole]=useState<Role|null>(adminEntry?'admin':null),[tab,setTab]=useState<'login'|'register'|'link'>('login');
  const [account,setAccount]=useState<Account|null>(null),[entered,setEntered]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');

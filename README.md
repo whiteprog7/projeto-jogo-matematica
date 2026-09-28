@@ -34,6 +34,8 @@ A página inicial apresenta Aluno, Professor e Administrador; `/admin` abre a me
 
 O cadastro de alunos/professores gera um ID `TF-…`, salva o papel selecionado e libera o acesso imediatamente. O administrador ainda pode bloquear uma conta ou alterar seu papel. Uma conta anterior pode ser vinculada a ID/senha somente após autenticação da identidade antiga pelo dispatcher; informar um e-mail não vincula contas.
 
+No login, o servidor identifica o tipo real da conta pelo ID ou e-mail confirmado. A escolha visual entre Aluno, Professor e Administrador não impede o acesso de uma credencial válida. Senhas temporárias usam caracteres alfanuméricos para facilitar a cópia e o formulário encerra tentativas que ultrapassem 15 segundos, permitindo tentar novamente.
+
 `AUTH_PEPPER`, `ADMIN_PASSWORD_HASH` e `ADMIN_PROFILE_ID` são segredos de runtime geridos no Sites. A senha administrativa não está no código, banco, cliente ou arquivos de configuração; seu verificador fica no segredo. Outras senhas têm salt aleatório e PBKDF2-HMAC-SHA256 (100.000 iterações compatíveis com Workers), com pré-processamento HMAC usando pepper separado do banco. Alterar o pepper exige planejar a redefinição de todos os verificadores.
 
 Sessões usam tokens aleatórios de 256 bits, com digest armazenado no banco, validade de 8 horas e cookie `__Host-tufi-session` HttpOnly, Secure, SameSite=Lax. Logout revoga a sessão. POSTs de autenticação/administração exigem origem correspondente. Tentativas de login têm limite por IP e identificador. Bloqueio e papel são consultados novamente nas operações protegidas. As rotas não usam bypass de desenvolvimento. A recuperação por e-mail foi implementada na v0.5.0-beta e depende da configuração do remetente. Consulte `docs/RECUPERACAO_EMAIL.md`.
