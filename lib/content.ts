@@ -8,11 +8,16 @@ export const regions = [
 ];
 export const gears=[
  {name:'Pulseira numérica',symbol:'＋',xp:0,level:'Aprendiz',bonus:'Revela uma dica curta do Tufi em cada desafio.'},
- {name:'Mochila do explorador',symbol:'÷',xp:400,level:'Explorador',bonus:'Abre uma dica ampliada com a estratégia da região.'},
- {name:'Compasso do estrategista',symbol:'△',xp:1200,level:'Estrategista',bonus:'Elimina uma alternativa incorreta por desafio.'},
- {name:'Insígnia do conhecimento',symbol:'∞',xp:2400,level:'Capitão',bonus:'Permite revisar e trocar a resposta antes de confirmar.'}
+ {name:'Mochila do explorador',symbol:'÷',xp:350,level:'Explorador',bonus:'Abre uma dica ampliada com a estratégia da região.'},
+ {name:'Compasso do estrategista',symbol:'△',xp:700,level:'Estrategista',bonus:'Elimina uma alternativa incorreta por desafio.'},
+ {name:'Insígnia do conhecimento',symbol:'∞',xp:1050,level:'Capitão',bonus:'Permite revisar e trocar a resposta antes de confirmar.'},
+ {name:'Cristal de Proteção',symbol:'◇',xp:1400,level:'Protetor',bonus:'Mostra um checklist para conferir o raciocínio antes de responder.'},
+ {name:'Ampulheta Mágica',symbol:'⌛',xp:1750,level:'Mestre do Tempo',bonus:'Divide o desafio em três passos, sem limite de tempo.'},
+ {name:'Mapa Antigo',symbol:'⌖',xp:2100,level:'Cartógrafo',bonus:'Revela a estratégia e o caminho matemático da região.'},
+ {name:'Poção de Revisão',symbol:'⚗',xp:2450,level:'Alquimista',bonus:'Apresenta um exemplo resolvido parecido para orientar a resposta.'},
+ {name:'Chave Dourada',symbol:'⚿',xp:2800,level:'Guardião',bonus:'Elimina duas alternativas incorretas por desafio.'}
 ];
-export type Question={text:string;options:string[];correct:number;explanation:string;hint?:string;bonus?:{kind:'eliminate';index:number}};
+export type Question={text:string;options:string[];correct:number;explanation:string;hint?:string;bonus?:{kind:'eliminate'|'golden-key';indices:number[]}};
 function rand(n:number){const v=new Uint32Array(1);crypto.getRandomValues(v);return v[0]%n}
 export function makeQuestion(region:number,stage:number):Question{
  const a=rand(8)+3,b=rand(6)+2;let text='',answer='',explanation='',wrong:string[]=[];
@@ -25,5 +30,5 @@ export function makeQuestion(region:number,stage:number):Question{
  if(region===5){if(stage<2)number(`Divida ${a*b} cristais igualmente entre ${b} portais. Quantos vão em cada um?`,a,`${a*b} ÷ ${b} = ${a}.`);else if(stage<4)number(`Uma sequência começa em ${a} e aumenta de ${b} em ${b}: ${a}, ${a+b}, ${a+2*b}, ... Qual é o próximo número?`,a+3*b,`Adicione ${b} ao último número: ${a+2*b} + ${b} = ${a+3*b}.`);else number(`Uma sala tem ${a} fileiras com ${b} lugares. ${b} lugares estão vazios. Quantas pessoas estão sentadas?`,a*b-b,`Primeiro calcule os lugares: ${a} × ${b} = ${a*b}. Depois subtraia os vazios: ${a*b} − ${b} = ${a*b-b}.`)}
  const options=[answer,...wrong];for(let i=options.length-1;i>0;i--){let j=rand(i+1);[options[i],options[j]]=[options[j],options[i]]}const hints=[stage<2?'Separe dezenas e unidades. Some cada parte e reúna os resultados.':stage<4?'Cada caixa tem a mesma quantidade. Que operação representa grupos iguais?':'Compare o total necessário com o que já está no portal. O que falta?',stage%2===0?'Observe o numerador. Pelo que ele foi multiplicado? Faça o mesmo com o denominador.':'Divida o total pelo número de partes iguais.',stage===0?'Hexa é um prefixo usado para seis. Conte os lados.':stage===3?'Pense no canto de um quadrado.':'A pergunta pede contorno (somar lados) ou superfície (multiplicar medidas)?',stage%2?'Resolva primeiro o que está dentro dos parênteses.':'Faça a multiplicação antes da adição.',stage%2?'Cada metro contém cem centímetros.':'Alinhe as vírgulas e some inteiros e centésimos separadamente.',stage<2?'Repartir igualmente significa dividir o total pelo número de grupos.':stage<4?'Subtraia dois termos vizinhos para descobrir quanto a sequência cresce.':'Calcule todos os lugares e depois retire os vazios.'];return {text,options,correct:options.indexOf(answer),explanation,hint:hints[region]};
 }
-export function publicQuestion(q:Question){return {text:q.text,options:q.options,hint:q.hint||'Leia com calma e separe os dados antes de escolher a operação.',eliminated:q.bonus?.index??null}}
+export function publicQuestion(q:Question){return {text:q.text,options:q.options,hint:q.hint||'Leia com calma e separe os dados antes de escolher a operação.',eliminated:q.bonus?.indices??[]}}
 export function scoreRun(correct:number){return correct*100}

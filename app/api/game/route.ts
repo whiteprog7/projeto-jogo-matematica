@@ -49,13 +49,13 @@ export async function POST(request:Request){try{
  const recent=await db().prepare('SELECT COUNT(*) n FROM runs WHERE user_id=? AND started>?').bind(id,Date.now()-60000).first<any>();if(recent.n>=12)return reply({error:'Aguarde um minuto antes de iniciar outra missão.'},429);
  const questions=Array.from({length:5},(_,i)=>makeQuestion(b.region,i));const run=crypto.randomUUID();await db().prepare('INSERT INTO runs(id,user_id,class_id,region,questions,started) VALUES(?,?,?,?,?,?)').bind(run,id,p.class_id,b.region,JSON.stringify(questions),Date.now()).run();return reply({id:run,step:0,question:publicQuestion(questions[0])})}
  if(b.action==='bonus'){
-  if(typeof b.id!=='string'||!Number.isInteger(b.step)||b.kind!=='eliminate')return reply({error:'Bônus inválido.'},400);
-  if(p.gear!==2)return reply({error:'Equipe o Compasso do estrategista para usar este bônus.'},403);
+  if(typeof b.id!=='string'||!Number.isInteger(b.step)||!['eliminate','golden-key'].includes(b.kind))return reply({error:'Bônus inválido.'},400);
+  const requiredGear=b.kind==='golden-key'?8:2;if(p.gear!==requiredGear)return reply({error:requiredGear===8?'Equipe a Chave Dourada para usar este bônus.':'Equipe o Compasso do estrategista para usar este bônus.'},403);
   const run=await db().prepare('SELECT * FROM runs WHERE id=? AND user_id=?').bind(b.id,id).first<any>();if(!run)return reply({error:'Missão não encontrada.'},404);
   if(run.done||run.step!==b.step)return reply({error:'Etapa já encerrada.'},409);
-  const questions:Question[]=JSON.parse(run.questions),q=questions[run.step];if(q.bonus)return reply({index:q.bonus.index});
-  const index=q.options.findIndex((_:string,i:number)=>i!==q.correct);q.bonus={kind:'eliminate',index};
-  const update=await db().prepare('UPDATE runs SET questions=? WHERE id=? AND user_id=? AND step=?').bind(JSON.stringify(questions),run.id,id,b.step).run();if(!update.meta.changes)return reply({error:'Bônus em processamento. Tente novamente.'},409);return reply({index});
+  const questions:Question[]=JSON.parse(run.questions),q=questions[run.step];if(q.bonus)return reply({indices:q.bonus.indices});
+  const wrong=q.options.map((_:string,i:number)=>i).filter((i:number)=>i!==q.correct),indices=wrong.slice(0,requiredGear===8?2:1);q.bonus={kind:b.kind,indices};
+  const update=await db().prepare('UPDATE runs SET questions=? WHERE id=? AND user_id=? AND step=?').bind(JSON.stringify(questions),run.id,id,b.step).run();if(!update.meta.changes)return reply({error:'Bônus em processamento. Tente novamente.'},409);return reply({indices});
  }
  if(b.action==='answer'){if(typeof b.id!=='string'||!Number.isInteger(b.step)||!Number.isInteger(b.choice)||b.choice<0||b.choice>3)return reply({error:'Resposta inválida.'},400);const r=await db().prepare('SELECT * FROM runs WHERE id=? AND user_id=?').bind(b.id,id).first<any>();if(!r)return reply({error:'Missão não encontrada.'},404);
  const qs:Question[]=JSON.parse(r.questions),answers=JSON.parse(r.answers);

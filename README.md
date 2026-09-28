@@ -7,7 +7,7 @@ Implementação web funcional baseada nos documentos fornecidos. React, TypeScri
 ## Executado nesta versão
 
 - Seis regiões, cinco questões por missão, questões parametrizadas, feedback explicativo, desafio final e resultado.
-- Perfil com nome de aventura, histórico persistente, retomada de missão por até 24 horas, melhor pontuação por região e quatro equipamentos visuais.
+- Perfil com nome de aventura, histórico persistente, retomada de missão por até 24 horas, melhor pontuação por região e nove equipamentos com bônus pedagógicos.
 - Entrada em turmas por código; criação de turmas e consultas de professor protegidas no servidor por papel aprovado e vínculo com a turma.
 - Ranking por turma/região, no máximo uma linha por estudante, melhor resultado; opção de desempenho exige pelo menos 80% de acertos.
 - Histórico individual e exportações CSV; impressão formatada permite salvar PDF pelo navegador.
@@ -44,7 +44,7 @@ O endereço permanece público e compartilhável, conforme solicitado; dados e o
 
 ## Bônus dos equipamentos
 
-Os equipamentos conquistados com XP têm efeitos pedagógicos durante as missões: a Pulseira numérica libera uma dica curta, a Mochila do explorador abre uma orientação ampliada, o Compasso do estrategista elimina uma alternativa incorreta por desafio e a Insígnia do conhecimento permite revisar a escolha antes da confirmação. O uso do Compasso é validado e registrado no servidor, inclusive quando a missão é retomada.
+Os nove equipamentos conquistados com XP têm efeitos pedagógicos durante as missões. Além da Pulseira, Mochila, Compasso e Insígnia, esta versão adiciona o Cristal de Proteção (checklist de raciocínio), a Ampulheta Mágica (resolução em três passos), o Mapa Antigo (estratégia da região), a Poção de Revisão (exemplo resolvido) e a Chave Dourada (elimina duas alternativas incorretas). Os bônus de eliminação são validados e registrados no servidor, inclusive quando a missão é retomada.
 
 ## Correção do treino offline
 
