@@ -1,5 +1,7 @@
 > v0.5.0-beta: login por e-mail confirmado, confirmação de endereço e redefinição de senha. Envio real depende de Resend e remetente autorizado; veja [configuração e limites](docs/RECUPERACAO_EMAIL.md).
 
+> v0.10.0-beta: cada um dos sete mundos ganhou uma abertura narrativa própria, apresentada pelo mascote Tufi aprovado pelo responsável. A história pode ser lida em voz alta pelo navegador antes de iniciar a missão.
+
 # Tufi e o Enigma dos Números
 
 Implementação web funcional baseada nos documentos fornecidos. React, TypeScript, Vite/Vinext, API server-side e D1/SQLite. Consulte `docs/DECISOES.md` para correções e limites da entrega.
@@ -13,6 +15,7 @@ Implementação web funcional baseada nos documentos fornecidos. React, TypeScri
 - Histórico individual e exportações CSV; impressão formatada permite salvar PDF pelo navegador.
 - Treino separado em `/offline.html`, disponível offline após carregamento/preparação; histórico local sem sincronização ou validade oficial.
 - Teclado/setas, preferências de som e animação, respeito a movimento reduzido e layout responsivo.
+- Abertura narrativa exclusiva para cada mundo, com o Tufi em cena, botão para rever a história e narração opcional em português quando o navegador oferece síntese de voz.
 
 ## Rodar e verificar
 
@@ -60,7 +63,7 @@ Testes: `node tests/auth.mjs`, `node tests/game.mjs`, `node tests/offline.mjs` e
 
 ## Assets e tecnologia
 
-`public/world.webp` é cenário original gerado para esta implementação. Não representa o mascote ou logo oficiais. As imagens e o modelo 3D citados no README original não foram anexados. Não foram inventados substitutos oficiais.
+`public/world.webp` é cenário original gerado para esta implementação. `public/tufi-story-mascot.png` é uma interpretação visual criada a partir do guia de identidade e aprovada pelo responsável para as aberturas narrativas; não substitui o arquivo-fonte oficial citado na documentação, que não foi anexado.
 
 Esta versão web não implementa Babylon.js, modelos animados de Tufi, APK nativo para TV Box, Gmail institucional, RG/RA. O runtime hospedado usa Workers e D1; Nginx e Node/Express não são requisitos deste runtime. Um backend Node e integração escolar são trabalhos de implantação separados, não recursos já concluídos.
 
