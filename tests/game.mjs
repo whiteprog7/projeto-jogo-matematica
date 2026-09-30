@@ -45,4 +45,21 @@ const klass=sql.prepare('SELECT * FROM classes WHERE code=?').get(c2.code);asser
 identity('bob');assert.equal((await adminPost({action:'rotateCode',id:klass.id})).status,403);
 const {journey,achievements,worldStories}=await import('file://'+path.join(temp,'adventure.mjs'));assert.equal(journey([]).percent,0);const all=Array.from({length:6},(_,region)=>({region,best:500,visits:1,finished:1,correct:5}));assert.equal(journey(all).percent,86);assert.equal(journey(all).expansionUnlocked,true);assert.equal(achievements(all).filter(x=>x.earned).length,6);assert.equal(journey([...all,{region:6,best:500,visits:1,finished:1,correct:5}]).percent,100);assert.equal(journey([{region:4,best:0,visits:1}]).unlocked[4],true);assert.equal(worldStories.length,7);assert.equal(new Set(worldStories.map(story=>story.title)).size,7);assert.ok(worldStories.every(story=>story.subtitle&&story.lines.length===3&&story.lines.every(line=>line.length>40)));
 for(let region=0;region<7;region++)for(let stage=0;stage<5;stage++)for(let n=0;n<100;n++){const q=makeQuestion(region,stage);assert.equal(q.options.length,4);assert.equal(new Set(q.options).size,4);assert.ok(q.text&&q.explanation);assert.ok(q.correct>=0&&q.correct<4);assert.equal('correct' in publicQuestion(q),false)}
+// Complete actual missions through the API, including an abandoned replay like the reported case.
+identity('journey-test');await post({action:'profile',name:'Explorador de teste'});await approve('journey-test');
+assert.equal((await post({action:'start',region:6})).status,403);
+for(let region=0;region<7;region++){
+ const mission=await post({action:'start',region});assert.equal(mission.status,200);
+ const questions=JSON.parse(sql.prepare('SELECT questions FROM runs WHERE id=?').get(mission.id).questions);
+ for(let step=0;step<5;step++){const result=await post({action:'answer',id:mission.id,step,choice:questions[step].correct});assert.equal(result.status,200);assert.equal(result.count,step+1);assert.equal(result.done,step===4)}
+ const progress=await get('');assert.equal(progress.journey.best[region],500);assert.equal(progress.journey.expansionUnlocked,region>=5);
+ if(region===2)await post({action:'start',region:2});
+ if(region===5){assert.equal(progress.journey.next,6);assert.equal(progress.journey.baseXp,3000);assert.equal((await get('?view=active')).run.region,2);assert.equal(progress.achievements.find(a=>a.id==='seventh-signal').earned,true)}
+}
+assert.equal((await get('')).journey.percent,100);assert.equal((await get('')).journey.mastered,7);
+const minimum=all.map(s=>({...s,best:400,correct:4}));assert.equal(journey(minimum).expansionUnlocked,false);
+assert.equal(journey(minimum.map(s=>({...s,best:s.region<2?500:400,correct:s.region===5?5:4}))).expansionUnlocked,true);
+assert.equal(journey(minimum.map(s=>({...s,best:s.region<2?500:400}))).expansionUnlocked,false);
+console.log('PASS: full API journey, 35/35 correct answers, secret-world lock/unlock, abandoned replay, persisted 100% completion and exact unlock boundaries.');
+if(process.argv.includes('--browser'))await (await import('./journey-browser.mjs')).testJourney({get,post,sql,identity,approve});
 sql.close();rmSync(temp,{recursive:true});console.log('PASS: authentication, role/ownership checks, class isolation, mission flow, replay protection, ranking eligibility, hidden expansion rules, stored progress, and 3500 generated questions.');
