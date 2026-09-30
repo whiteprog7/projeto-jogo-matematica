@@ -33,7 +33,7 @@ Use Node 24 para os testes que utilizam `node:sqlite`. O gerenciador adotado é 
 
 O painel `/admin` mostra o login e o e-mail confirmado das contas, permite bloquear alunos e professores, alterar papel, atribuir turma, redefinir senhas, excluir perfis, criar/editar turmas, reatribuir professor, girar código de entrada e consultar históricos. A senha atual nunca é recuperável; a redefinição cria uma senha temporária exibida uma única vez, revoga sessões e remove tokens de recuperação. A exclusão remove a conta, as sessões, os tokens, o progresso e as partidas. Alterações são registradas em auditoria; o painel mostra as 100 mais recentes.
 
-A página inicial apresenta Aluno, Professor e Administrador; `/admin` abre a mesma entrada com Administrador selecionado. A escolha é apenas de interface: as APIs consultam sessão e permissões no servidor. O único administrador é o perfil configurado em `ADMIN_PROFILE_ID`, preservando o histórico do proprietário. Login administrativo: `adm123` ou `ADM-0001`. Não há cadastro ou promoção pública de administradores.
+A página inicial apresenta Aluno, Professor e Administrador; `/admin` abre a mesma entrada com Administrador selecionado. A escolha é apenas de interface: as APIs consultam sessão e permissões no servidor. O único administrador é o perfil configurado em `ADMIN_PROFILE_ID`, preservando o histórico do proprietário. O identificador de acesso administrativo deve ser fornecido diretamente ao responsável pelo jogo. Não há cadastro ou promoção pública de administradores.
 
 O cadastro de alunos/professores gera um ID `TF-…`, salva o papel selecionado e libera o acesso imediatamente. O administrador ainda pode bloquear uma conta ou alterar seu papel. Uma conta anterior pode ser vinculada a ID/senha somente após autenticação da identidade antiga pelo dispatcher; informar um e-mail não vincula contas.
 
@@ -47,7 +47,7 @@ O endereço permanece público e compartilhável, conforme solicitado; dados e o
 
 ## Bônus dos equipamentos
 
-Os nove equipamentos conquistados com XP têm efeitos pedagógicos durante as missões. Além da Pulseira, Mochila, Compasso e Insígnia, esta versão adiciona o Cristal de Proteção (checklist de raciocínio), a Ampulheta Mágica (resolução em três passos), o Mapa Antigo (estratégia da região), a Poção de Revisão (exemplo resolvido) e a Chave Dourada (elimina duas alternativas incorretas). Os bônus de eliminação são validados e registrados no servidor, inclusive quando a missão é retomada.
+Os treze equipamentos conquistados com XP têm efeitos pedagógicos durante as missões. Além da Pulseira, Mochila, Compasso e Insígnia, esta versão adiciona o Cristal de Proteção (checklist de raciocínio), a Ampulheta Mágica (resolução em três passos), o Mapa Antigo (estratégia da região), a Poção de Revisão (exemplo resolvido) e a Chave Dourada (elimina duas alternativas incorretas). Os bônus de eliminação são validados e registrados no servidor, inclusive quando a missão é retomada.
 
 ## O Sétimo Sinal
 
@@ -78,3 +78,11 @@ Build, tipagem e testes de API/lógica executados. Não houve teste visual em na
 A implementação agora inclui guia textual Tufi, missões narrativas em cinco etapas (duas missões e um guardião por região), dicas e revisão de erros sem pontos adicionais, desbloqueio sequencial validado no servidor, conquistas derivadas de resultados e Livro do Explorador. Regiões previamente visitadas são preservadas. Não houve migração de schema para esses recursos: os indicadores são derivados de `runs`.
 
 O professor acompanha XP/portais por turma, erros por conteúdo/questão e evolução na amostra recente. Novas opções de fonte, som e animações são preferências locais. O site permanece compartilhável por link conforme autorização posterior do proprietário, com autenticação/aprovação obrigatória para recursos online protegidos.
+
+## Equipamentos e trajes — v0.11.0-beta
+
+Novos equipamentos: Caderno do Explorador (2.900 XP), Lente dos Enigmas (3.000 XP), Régua dos Múltiplos (3.200 XP) e Orbe do Sétimo Sinal (3.500 XP). Oferecem rascunho por questão, ampliação e destaque dos números, tabela de múltiplos de 2 a 12 e a combinação dessas três ferramentas. Não alteram a pontuação oficial.
+
+O Guarda-roupa, em Equipamentos, mantém o Explorador clássico e adiciona Cartógrafo das Trilhas (1.500 XP) e Guardião dos Cristais (3.000 XP). O traje é salvo no perfil separadamente do equipamento e aparece nas histórias, nos guias e nos desafios. A migração 0004 adiciona apenas a coluna outfit com padrão 0, preservando histórico e equipamentos. [Artes e prompts](docs/TUFI_TRAJES_PROMPTS.md).
+
+Teste de navegador: com o servidor local ativo e Playwright disponível, execute `node tests/game.mjs --browser`. `PLAYWRIGHT_MODULE` pode apontar para o módulo instalado e `PLAYWRIGHT_CHANNEL=msedge` usa Edge. O teste intercepta apenas o transporte HTTP e exercita a API real com SQLite isolado, sem alterar contas reais. Inclui 35 desafios, persistência de trajes, bônus, limites de XP e telas de celular.

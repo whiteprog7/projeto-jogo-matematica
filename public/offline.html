@@ -16,7 +16,16 @@ const gears = [
     { name: 'Ampulheta Mágica', symbol: '⌛', xp: 1750, level: 'Mestre do Tempo', bonus: 'Divide o desafio em três passos, sem limite de tempo.' },
     { name: 'Mapa Antigo', symbol: '⌖', xp: 2100, level: 'Cartógrafo', bonus: 'Revela a estratégia e o caminho matemático da região.' },
     { name: 'Poção de Revisão', symbol: '⚗', xp: 2450, level: 'Alquimista', bonus: 'Apresenta um exemplo resolvido parecido para orientar a resposta.' },
-    { name: 'Chave Dourada', symbol: '⚿', xp: 2800, level: 'Guardião', bonus: 'Elimina duas alternativas incorretas por desafio.' }
+    { name: 'Chave Dourada', symbol: '⚿', xp: 2800, level: 'Guardião', bonus: 'Elimina duas alternativas incorretas por desafio.' },
+    { name: 'Caderno do Explorador', symbol: '▤', xp: 2900, level: 'Inventor', bonus: 'Abre um rascunho para organizar suas contas em cada desafio.' },
+    { name: 'Lente dos Enigmas', symbol: '◉', xp: 3000, level: 'Investigador', bonus: 'Amplia a pergunta e destaca os números para ajudar na leitura.' },
+    { name: 'Régua dos Múltiplos', symbol: '↔', xp: 3200, level: 'Pesquisador', bonus: 'Abre uma tabela de múltiplos de 2 a 12 para consultar durante o desafio.' },
+    { name: 'Orbe do Sétimo Sinal', symbol: '✺', xp: 3500, level: 'Mestre dos Sete Mundos', bonus: 'Reúne rascunho, lente de leitura e tabela de múltiplos em um só equipamento.' }
+];
+const outfits = [
+    { name: 'Explorador clássico', xp: 0, image: '/tufi-story-mascot.png', description: 'O boné, os óculos azuis e o compasso que acompanham o Tufi desde o início.' },
+    { name: 'Cartógrafo das Trilhas', xp: 1500, image: '/tufi-cartografo.png', description: 'Colete verde-petróleo e mapa de viagem para descobrir novos caminhos.' },
+    { name: 'Guardião dos Cristais', xp: 3000, image: '/tufi-guardiao.png', description: 'Capa azul e detalhes dourados para celebrar a união dos seis cristais.' }
 ];
 function rand(n) { const v = new Uint32Array(1); if(globalThis.crypto?.getRandomValues)globalThis.crypto.getRandomValues(v);else v[0]=Math.floor(Math.random()*4294967296); return v[0] % n; }
 function makeQuestion(region, stage) {
