@@ -21,14 +21,14 @@ export async function verifyPassword(password:string,stored:string){
  const actual=await derive(password,salt);let diff=0;for(let i=0;i<64;i++)diff|=actual.charCodeAt(i)^expected.charCodeAt(i);return diff===0;
 }
 export function sessionToken(h:Headers){const value=h.get('cookie')?.split(';').map(v=>v.trim()).find(v=>v.startsWith(COOKIE+'='))?.slice(COOKIE.length+1);return value&&/^[a-f0-9]{64}$/.test(value)?value:null}
-export async function getCurrentUser():Promise<ChatGPTUser|null>{
+export async function getCurrentUser(options:{allowPasswordChange?:boolean}={}):Promise<ChatGPTUser|null>{
  const token=sessionToken(await headers());if(!token)return null;
- const p=await db().prepare('SELECT p.* FROM sessions s JOIN profiles p ON p.id=s.user_id WHERE s.token_hash=? AND s.expires>?').bind(await digest(token),Date.now()).first<any>();
- return p?{userId:p.id,displayName:p.name,fullName:p.name,email:p.email}:null;
+ const p=await db().prepare('SELECT p.*,a.must_change_password FROM sessions s JOIN profiles p ON p.id=s.user_id LEFT JOIN accounts a ON a.user_id=p.id WHERE s.token_hash=? AND s.expires>?').bind(await digest(token),Date.now()).first<any>();
+ return p&&(!p.must_change_password||options.allowPasswordChange)?{userId:p.id,displayName:p.name,fullName:p.name,email:p.email}:null;
 }
 export async function accountInfo(user:ChatGPTUser){
- const p=await db().prepare('SELECT p.id,p.name,p.role,p.requested_role,p.status,a.login_id,a.email account_email,a.email_verified FROM profiles p LEFT JOIN accounts a ON a.user_id=p.id WHERE p.id=?').bind(user.userId).first<any>();
- if(!p)return null;const admin=adminAllowed(user);return {email:p.account_email||null,emailVerified:p.email_verified===1,id:p.login_id||(admin?'ADM-0001':p.id),name:p.name,role:admin?'admin':p.status==='approved'?p.role:p.requested_role,status:admin?'approved':p.status};
+ const p=await db().prepare('SELECT p.id,p.name,p.role,p.requested_role,p.status,a.login_id,a.email account_email,a.email_verified,a.must_change_password FROM profiles p LEFT JOIN accounts a ON a.user_id=p.id WHERE p.id=?').bind(user.userId).first<any>();
+ if(!p)return null;const admin=adminAllowed(user);return {mustChangePassword:p.must_change_password===1,email:p.account_email||null,emailVerified:p.email_verified===1,id:p.login_id||(admin?'ADM-0001':p.id),name:p.name,role:admin?'admin':p.status==='approved'?p.role:p.requested_role,status:admin?'approved':p.status};
 }
 export async function issueSession(userId:string,expectedHash?:string){
  const token=randomToken(),now=Date.now();const result=await db().batch([

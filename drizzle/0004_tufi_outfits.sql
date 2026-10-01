@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `outfit` integer DEFAULT 0 NOT NULL;
