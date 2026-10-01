@@ -92,3 +92,11 @@ Teste de navegador: com o servidor local ativo e Playwright disponível, execute
 A janela de redefinição mostra o ID de acesso junto da senha temporária. A cópia confirma sucesso, tenta uma alternativa quando o navegador restringe a área de transferência e orienta a cópia manual quando necessário. Gerar uma nova senha invalida a anterior e as sessões existentes. O administrador também libera o contador de tentativas do ID e do e-mail confirmado daquela conta, preservando os limites de IP e das demais contas.
 
 Validação: `node tests/auth.mjs` cobre bloqueio, redefinições repetidas, aliases e revogação. Com a prévia local e Playwright disponíveis, `node tests/auth.mjs --browser` exercita geração, cópia e login em conta e banco isolados, incluindo permissões de cópia negadas.
+
+## Senhas dos alunos — v0.12.0-beta
+
+O painel do professor mostra o ID de acesso e permite gerar uma senha temporária somente para alunos das suas turmas. A autorização é revalidada na gravação, inclusive quando o aluno muda de turma durante a solicitação. A operação fica no registro administrativo, sem armazenar a senha em texto nesse registro.
+
+Novas senhas temporárias emitidas pelo administrador ou professor exigem uma senha própria no primeiro acesso. A sessão permite apenas consultar a conta, sair e trocar a senha até concluir essa etapa. A troca pede a senha atual, uma nova senha de 10 a 128 caracteres e confirmação; invalida sessões e links anteriores, preservando ID, turma e progresso. Configurações também permite alterar a senha posteriormente. Contas existentes continuam funcionando; a migração 0005 adiciona apenas o indicador de troca obrigatória com padrão 0.
+
+Os testes de autenticação incluem isolamento entre professores/turmas, aluno transferido durante a solicitação, contas bloqueadas, troca obrigatória após recarga e invalidação da senha temporária. O teste de navegador usa as rotas reais em banco isolado para percorrer professor → senha temporária → aluno → senha própria → novo login.

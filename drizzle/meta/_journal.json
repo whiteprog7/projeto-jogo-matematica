@@ -36,6 +36,13 @@
       "when": 1790785015878,
       "tag": "0004_tufi_outfits",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790895145490,
+      "tag": "0005_temporary_passwords",
+      "breakpoints": true
     }
   ]
 }

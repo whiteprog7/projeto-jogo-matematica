@@ -3,7 +3,7 @@ import {pathToFileURL} from 'node:url';
 
 // Uses the local UI with real auth/admin handlers and the caller's isolated SQLite DB.
 // Session cookies remain in this process; no account or password is sent to a live API.
-export async function testAuthBrowser({auth, route: authRoute, admin, sql}) {
+export async function testAuthBrowser({auth, route: authRoute, admin, teacher, game, sql}) {
   const origin = process.env.TUFI_TEST_URL || 'http://localhost:5173';
   const target = new URL(origin);
   assert.ok(['localhost', '127.0.0.1'].includes(target.hostname), 'Browser auth tests require a local server');
@@ -17,6 +17,11 @@ export async function testAuthBrowser({auth, route: authRoute, admin, sql}) {
   const hash = await auth.hashPassword('browser-fixture-initial-password');
   sql.prepare("INSERT INTO profiles(id,name,email,role,requested_role,status) VALUES(?,?,'','student','student','approved')").run(fixtureUser, fixtureName);
   sql.prepare('INSERT INTO accounts(user_id,login_id,password_hash,created) VALUES(?,?,?,?)').run(fixtureUser, fixtureLogin, hash, Date.now());
+
+  sql.prepare("INSERT INTO profiles(id,name,email,role,requested_role,status) VALUES('browser-mentor','Professora de teste','','teacher','teacher','approved')").run();
+  sql.prepare("INSERT INTO accounts(user_id,login_id,password_hash,created) VALUES('browser-mentor','TF-BROWSER-MENTOR',?,?)").run(hash,Date.now());
+  sql.prepare("INSERT INTO classes(id,name,teacher,code) VALUES('browser-class','Turma do navegador','browser-mentor','BROWSER-CLASS')").run();
+  sql.prepare("UPDATE profiles SET class_id='browser-class' WHERE id=?").run(fixtureUser);
 
   const previousHeaders = globalThis.testHeaders;
   const previousLegacyUser = globalThis.legacyUser;
@@ -71,18 +76,10 @@ export async function testAuthBrowser({auth, route: authRoute, admin, sql}) {
       response = request.method() === 'POST' ? await authRoute.POST(realRequest) : await authRoute.GET();
     } else if (url.pathname === '/api/admin') {
       response = request.method() === 'POST' ? await admin.POST(realRequest) : await admin.GET();
-    } else if (url.pathname === '/api/game' && request.method() === 'GET') {
-      const user = await auth.getCurrentUser();
-      if (!user) response = Response.json({error: 'Entre na sua conta.'}, {status: 401});
-      else if (url.searchParams.get('view') === 'active') response = Response.json({run: null});
-      else {
-        const account = await auth.accountInfo(user);
-        response = Response.json({
-          profile: {id: user.userId, name: account.name, role: account.role, requested_role: account.role, status: 'approved', gear: 0, outfit: 0},
-          approved: true, admin: user.userId === 'owner', teacher: false,
-          stats: [], achievements: [], journey: {next: 0}, class: null,
-        });
-      }
+    } else if(url.pathname === '/api/teacher') {
+      response = await teacher.POST(realRequest);
+    } else if(url.pathname === '/api/game') {
+      response = request.method() === 'POST' ? await game.POST(realRequest) : await game.GET(realRequest);
     } else {
       failures.push(`Unexpected local API: ${request.method()} ${url.pathname}`);
       response = Response.json({error: 'Unexpected test API'}, {status: 501});
@@ -177,6 +174,26 @@ export async function testAuthBrowser({auth, route: authRoute, admin, sql}) {
     await page.locator('form').getByRole('button', {name: 'Entrar', exact: true}).click();
   };
 
+  const choosePassword=async (temporary,password) => {
+    await page.getByRole('heading',{name:'Escolha sua nova senha',exact:true}).waitFor();
+    assert.equal(await page.locator('.app-shell').count(),0);
+    await page.reload();
+    await page.getByRole('heading',{name:'Escolha sua nova senha',exact:true}).waitFor();
+    await page.locator('#current-password').fill(temporary);
+    await page.locator('#new-password').fill(password);
+    await page.locator('#new-password-confirm').fill('different-fixture-password');
+    await page.getByRole('button',{name:'Salvar senha e continuar',exact:true}).click();
+    await page.getByRole('alert').filter({hasText:'As novas senhas precisam ser iguais.'}).waitFor();
+    await page.locator('#new-password-confirm').fill(password);
+    await page.getByRole('button',{name:'Salvar senha e continuar',exact:true}).click();
+    await page.locator('.profile-chip').filter({hasText:fixtureName}).waitFor();
+  };
+  const showTeacher=async()=>{
+    await serial;serverCookie=(await auth.issueSession('browser-mentor')).split(';')[0];
+    await page.goto(target.origin,{waitUntil:'domcontentloaded'});
+    await page.getByRole('button',{name:'Abrir painel do professor',exact:true}).click();
+    await page.getByRole('heading',{name:'Aprendizagem em acompanhamento',exact:true}).waitFor();
+  };
   try {
     await showOwner();
     await resetFromUI();
@@ -184,11 +201,12 @@ export async function testAuthBrowser({auth, route: authRoute, admin, sql}) {
     const firstPassword = await copyFromUI('password', 'success');
     await closeAndLogout();
     await submitLogin(firstLogin, firstPassword);
+    await choosePassword(firstPassword,'first-chosen-browser-password');
     await page.locator('.profile-chip').filter({hasText: fixtureName}).waitFor();
     assert.equal(requests.filter(item => item.action === 'login').at(-1)?.status, 200);
     assert.ok(sql.prepare('SELECT COUNT(*) n FROM sessions WHERE user_id=?').get(fixtureUser).n > 0);
 
-    await showOwner();
+    await showTeacher();
     await resetFromUI();
     assert.equal(sql.prepare('SELECT COUNT(*) n FROM sessions WHERE user_id=?').get(fixtureUser).n, 0, 'A new reset must revoke the prior session');
     assert.ok(await page.locator('#temporary-password').inputValue() !== firstPassword, 'A second reset must issue a different password');
@@ -209,13 +227,16 @@ export async function testAuthBrowser({auth, route: authRoute, admin, sql}) {
     await page.getByRole('alert').filter({hasText: 'ID ou senha incorretos.'}).waitFor();
     assert.equal(requests.filter(item => item.action === 'login').at(-1)?.status, 401);
     await submitLogin(secondLogin, secondPassword);
+    await choosePassword(secondPassword,'second-chosen-browser-password');
+    await page.getByRole('button',{name:'Sair',exact:true}).click();
+    await submitLogin(secondLogin,'second-chosen-browser-password');
     await page.locator('.profile-chip').filter({hasText: fixtureName}).waitFor();
     assert.equal(requests.filter(item => item.action === 'login').at(-1)?.status, 200);
     assert.equal(requests.filter(item => item.action === 'resetPassword' && item.status === 200).length, 2);
     assert.deepEqual(failures, []);
     assert.deepEqual(pageErrors, []);
     assert.deepEqual(blockedOrigins, []);
-    console.log('PASS: local browser reset, copied ID/password login, second reset invalidation, session revocation, clipboard success, denied/absent API fallback and selected manual-copy recovery.');
+    console.log('PASS: admin and teacher browser reset, required password choice/reload, personal password login, copied ID/password login, second reset invalidation, session revocation, clipboard success, denied/absent API fallback and selected manual-copy recovery.');
   } finally {
     await serial;
     await browser.close();

@@ -1,3 +1,4 @@
+import {changePassword} from '@/lib/password-change';
 import {emailAction,requestVerification} from './email-actions';
 import {normalizeEmail,emailReady} from '@/lib/email';
 import {getChatGPTUser} from '@/app/chatgpt-auth';
@@ -5,12 +6,13 @@ import {db,adminAllowed} from '@/lib/server';
 import {getCurrentUser,accountInfo,config,hashPassword,verifyPassword,issueSession,clearCookie,sessionToken,digest,limited} from '@/lib/auth';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200,cookie?:string)=>Response.json(data,{status,headers:{'Cache-Control':'no-store',...(cookie?{'Set-Cookie':cookie}:{})}});
-export async function GET(){try{const user=await getCurrentUser();return reply({account:user?await accountInfo(user):null,emailAvailable:emailReady()})}catch{return reply({error:'Não foi possível consultar sua conta. Tente novamente.'},503)}}
+export async function GET(){try{const user=await getCurrentUser({allowPasswordChange:true});return reply({account:user?await accountInfo(user):null,emailAvailable:emailReady()})}catch{return reply({error:'Não foi possível consultar sua conta. Tente novamente.'},503)}}
 export async function POST(request:Request){try{
  if(request.headers.get('origin')!==new URL(request.url).origin)return reply({error:'Origem inválida.'},403);
  const raw=await request.text();if(raw.length>4096)return reply({error:'Pedido muito grande.'},413);
  let b:any;try{b=JSON.parse(raw)}catch{return reply({error:'Pedido inválido.'},400)}if(!b||typeof b!=='object')return reply({error:'Pedido inválido.'},400);
  if(b.action==='logout'){const token=sessionToken(request.headers);if(token)await db().prepare('DELETE FROM sessions WHERE token_hash=?').bind(await digest(token)).run();return reply({ok:true},200,clearCookie())}
+ if(b.action==='changePassword')return changePassword(b,request);
  const emailResponse=await emailAction(b,request);if(emailResponse)return emailResponse;
  if(!['login','register','link'].includes(b.action))return reply({error:'Ação inválida.'},400);
  const ip=request.headers.get('cf-connecting-ip')||'unknown';

@@ -47,7 +47,7 @@ export async function emailAction(b:any,request:Request):Promise<Response|null>{
  const mutation=crypto.randomUUID(),newHash=kind==='reset'?await hashPassword(b.password):null;
  const gate="EXISTS(SELECT 1 FROM email_tokens WHERE token_hash=? AND consumed_by=?)";
  const statements=[db().prepare('UPDATE email_tokens SET consumed_by=? WHERE token_hash=? AND consumed_by IS NULL AND expires>? AND EXISTS(SELECT 1 FROM accounts WHERE user_id=? AND password_hash=?)').bind(mutation,key,now,t.user_id,t.expected_hash)];
- if(kind==='reset')statements.push(db().prepare('UPDATE accounts SET password_hash=? WHERE user_id=? AND '+gate).bind(newHash,t.user_id,key,mutation));
+ if(kind==='reset')statements.push(db().prepare('UPDATE accounts SET password_hash=?,must_change_password=0 WHERE user_id=? AND '+gate).bind(newHash,t.user_id,key,mutation));
  else statements.push(db().prepare('UPDATE accounts SET email=?,email_verified=1 WHERE user_id=? AND '+gate).bind(t.email,t.user_id,key,mutation));
  // Revoke all sessions and outstanding links atomically with the account change.
  statements.push(db().prepare('DELETE FROM sessions WHERE user_id=? AND '+gate).bind(t.user_id,key,mutation));
