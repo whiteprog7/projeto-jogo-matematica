@@ -86,3 +86,9 @@ Novos equipamentos: Caderno do Explorador (2.900 XP), Lente dos Enigmas (3.000 X
 O Guarda-roupa, em Equipamentos, mantém o Explorador clássico e adiciona Cartógrafo das Trilhas (1.500 XP) e Guardião dos Cristais (3.000 XP). O traje é salvo no perfil separadamente do equipamento e aparece nas histórias, nos guias e nos desafios. A migração 0004 adiciona apenas a coluna outfit com padrão 0, preservando histórico e equipamentos. [Artes e prompts](docs/TUFI_TRAJES_PROMPTS.md).
 
 Teste de navegador: com o servidor local ativo e Playwright disponível, execute `node tests/game.mjs --browser`. `PLAYWRIGHT_MODULE` pode apontar para o módulo instalado e `PLAYWRIGHT_CHANNEL=msedge` usa Edge. O teste intercepta apenas o transporte HTTP e exercita a API real com SQLite isolado, sem alterar contas reais. Inclui 35 desafios, persistência de trajes, bônus, limites de XP e telas de celular.
+
+## Redefinição de senha — v0.11.1-beta
+
+A janela de redefinição mostra o ID de acesso junto da senha temporária. A cópia confirma sucesso, tenta uma alternativa quando o navegador restringe a área de transferência e orienta a cópia manual quando necessário. Gerar uma nova senha invalida a anterior e as sessões existentes. O administrador também libera o contador de tentativas do ID e do e-mail confirmado daquela conta, preservando os limites de IP e das demais contas.
+
+Validação: `node tests/auth.mjs` cobre bloqueio, redefinições repetidas, aliases e revogação. Com a prévia local e Playwright disponíveis, `node tests/auth.mjs --browser` exercita geração, cópia e login em conta e banco isolados, incluindo permissões de cópia negadas.

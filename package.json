@@ -1,6 +1,6 @@
 {
   "name": "tufi-jogo-matematica",
-  "version": "0.11.0-beta",
+  "version": "0.11.1-beta",
   "private": true,
   "engines": {
     "node": ">=22.13.0"

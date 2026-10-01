@@ -1,4 +1,4 @@
-import {getCurrentUser as getChatGPTUser,hashPassword} from '@/lib/auth';
+import {getCurrentUser as getChatGPTUser,hashPassword,digest} from '@/lib/auth';
 import {db,adminAllowed} from '@/lib/server';
 export const dynamic='force-dynamic';
 const reply=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
@@ -33,11 +33,13 @@ export async function POST(request:Request){try{const u=await getChatGPTUser();i
  if(b.action==='rotateCode'){if(typeof b.id!=='string'||!await db().prepare('SELECT id FROM classes WHERE id=?').bind(b.id).first())return reply({error:'Turma não encontrada.'},404);const code=crypto.randomUUID().replaceAll('-','').slice(0,12).toUpperCase();await db().batch([db().prepare('UPDATE classes SET code=? WHERE id=?').bind(code,b.id),db().prepare('INSERT INTO audit(id,actor,target,action,details,created) VALUES(?,?,?,?,?,?)').bind(auditId,u.userId,b.id,'rotateCode','{}',time)]);return reply({ok:true})}
  if(b.action==='resetPassword'){
   if(typeof b.id!=='string'||b.id===u.userId)return reply({error:'Conta inválida para redefinição.'},400);
-  const account=await db().prepare('SELECT a.login_id,p.name FROM accounts a JOIN profiles p ON p.id=a.user_id WHERE a.user_id=?').bind(b.id).first<any>();if(!account)return reply({error:'Conta não encontrada.'},404);
+  const account=await db().prepare('SELECT a.login_id,a.email,a.email_verified,p.name FROM accounts a JOIN profiles p ON p.id=a.user_id WHERE a.user_id=?').bind(b.id).first<any>();if(!account)return reply({error:'Conta não encontrada.'},404);
   const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);let temporary='';for(const value of bytes)temporary+=alphabet[value%alphabet.length];
   const passwordHash=await hashPassword(temporary);
-  await db().batch([db().prepare('UPDATE accounts SET password_hash=? WHERE user_id=?').bind(passwordHash,b.id),db().prepare('DELETE FROM sessions WHERE user_id=?').bind(b.id),db().prepare('DELETE FROM email_tokens WHERE user_id=?').bind(b.id),db().prepare('INSERT INTO audit(id,actor,target,action,details,created) VALUES(?,?,?,?,?,?)').bind(auditId,u.userId,b.id,'resetPassword',JSON.stringify({loginId:account.login_id}),time)]);
-  return reply({ok:true,temporary});
+  const logins=[account.login_id,...(account.email_verified===1&&account.email?[account.email]:[])];
+  const loginBuckets=await Promise.all(logins.map((login:string)=>digest('login:'+login.trim().toUpperCase())));
+  await db().batch([...loginBuckets.map(bucket=>db().prepare('DELETE FROM auth_limits WHERE bucket=?').bind(bucket)),db().prepare('UPDATE accounts SET password_hash=? WHERE user_id=?').bind(passwordHash,b.id),db().prepare('DELETE FROM sessions WHERE user_id=?').bind(b.id),db().prepare('DELETE FROM email_tokens WHERE user_id=?').bind(b.id),db().prepare('INSERT INTO audit(id,actor,target,action,details,created) VALUES(?,?,?,?,?,?)').bind(auditId,u.userId,b.id,'resetPassword',JSON.stringify({loginId:account.login_id}),time)]);
+  return reply({ok:true,temporary,loginId:account.login_id});
  }
  if(b.action==='deleteUser'){
   if(typeof b.id!=='string'||b.id===u.userId)return reply({error:'A conta do administrador não pode ser excluída.'},400);
