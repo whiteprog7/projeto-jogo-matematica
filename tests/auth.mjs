@@ -8,11 +8,15 @@ globalThis.testEnv={ADMIN_PROFILE_ID:'owner',AUTH_PEPPER:'test-only-pepper-never
 globalThis.testHeaders=new Headers();globalThis.legacyUser=null;
 writeFileSync(path.join(temp,'server.mjs'),compile(readFileSync('lib/server.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env=globalThis.testEnv;")));
 writeFileSync(path.join(temp,'auth.mjs'),compile(readFileSync('lib/auth.ts','utf8').replace("import {headers} from 'next/headers';","const headers=async()=>globalThis.testHeaders;").replace("import {env} from 'cloudflare:workers';","const env=globalThis.testEnv;").replace("from './server'","from './server.mjs'")));
-const rewrite=s=>s.replace("import {getChatGPTUser} from '@/app/chatgpt-auth';","const getChatGPTUser=async()=>globalThis.legacyUser;").replace("from '@/lib/server'","from './server.mjs'").replace("from '@/lib/auth'","from './auth.mjs'").replace("from '@/lib/email'","from './email.mjs'").replace("from './email-actions'","from './email-actions.mjs'");
+const rewrite=s=>s.replace("import {getChatGPTUser} from '@/app/chatgpt-auth';","const getChatGPTUser=async()=>globalThis.legacyUser;").replace("from '@/lib/server'","from './server.mjs'").replace("from '@/lib/auth'","from './auth.mjs'").replace("from '@/lib/email'","from './email.mjs'").replace("from '@/lib/password-reset'","from './password-reset.mjs'").replace("from '@/lib/password-change'","from './password-change.mjs'").replace("from './email-actions'","from './email-actions.mjs'");
+for(const module of ['password-reset','password-change'])writeFileSync(path.join(temp,module+'.mjs'),compile(readFileSync('lib/'+module+'.ts','utf8').replace("from './server'","from './server.mjs'").replace("from './auth'","from './auth.mjs'")));
+writeFileSync(path.join(temp,'teacher.mjs'),compile(rewrite(readFileSync('app/api/teacher/route.ts','utf8'))));
 writeFileSync(path.join(temp,'email.mjs'),compile(readFileSync('lib/email.ts','utf8').replace("from './auth'","from './auth.mjs'")));
 writeFileSync(path.join(temp,'email-actions.mjs'),compile(rewrite(readFileSync('app/api/auth/email-actions.ts','utf8'))));
 writeFileSync(path.join(temp,'route.mjs'),compile(rewrite(readFileSync('app/api/auth/route.ts','utf8'))));
 writeFileSync(path.join(temp,'admin.mjs'),compile(rewrite(readFileSync('app/api/admin/route.ts','utf8'))));
+for(const module of ['content','adventure'])writeFileSync(path.join(temp,module+'.mjs'),compile(readFileSync('lib/'+module+'.ts','utf8')));
+writeFileSync(path.join(temp,'game.mjs'),compile(rewrite(readFileSync('app/api/game/route.ts','utf8')).replace("from '@/lib/content'","from './content.mjs'").replace("from '@/lib/adventure'","from './adventure.mjs'")));
 const sql=new DatabaseSync(':memory:');for(const file of readdirSync('drizzle').filter(f=>f.endsWith('.sql')))sql.exec(readFileSync('drizzle/'+file,'utf8'));
 globalThis.testDB={async batch(statements){sql.exec('BEGIN');try{const out=[];for(const stmt of statements)out.push(await stmt.execute());sql.exec('COMMIT');return out}catch(e){sql.exec('ROLLBACK');throw e}},prepare(query){let args=[];const stmt=sql.prepare(query);return {async execute(){if(/^SELECT/i.test(query))return {results:stmt.all(...args),meta:{changes:0}};const r=stmt.run(...args);return {results:[],meta:{changes:Number(r.changes)}}},bind(...a){args=a;return this},async first(){return stmt.get(...args)||null},async all(){return {results:stmt.all(...args)}},async run(){const r=stmt.run(...args);return {meta:{changes:Number(r.changes)}}}}}};
 
@@ -20,6 +24,8 @@ globalThis.testEnv.DB=globalThis.testDB;
 const auth=await import('file://'+path.join(temp,'auth.mjs'));
 const route=await import('file://'+path.join(temp,'route.mjs'));
 const admin=await import('file://'+path.join(temp,'admin.mjs'));
+const game=await import('file://'+path.join(temp,'game.mjs'));
+const teacherRoute=await import('file://'+path.join(temp,'teacher.mjs'));
 const password='fixture-password-2026';
 globalThis.testEnv.ADMIN_PASSWORD_HASH=await auth.hashPassword(password);
 let cookie='',ip='192.0.2.1';
@@ -42,10 +48,41 @@ const owner=await post({action:'login',role:'admin',login:'adm123',password});as
 const ownerCookie=cookie;assert.equal((await admin.GET()).status,200);
 const disposableHash=await auth.hashPassword('disposable-password-2026');
 sql.prepare("INSERT INTO profiles(id,name,email,role,requested_role,status) VALUES('disposable','Disposable','','student','student','approved')").run();
-sql.prepare("INSERT INTO accounts(user_id,login_id,password_hash,created) VALUES('disposable','TF-DISPOSABLE',?,?)").run(disposableHash,Date.now());
+sql.prepare("INSERT INTO accounts(user_id,login_id,password_hash,created,email,email_verified) VALUES('disposable','TF-DISPOSABLE',?,?,'disposable@example.test',1)").run(disposableHash,Date.now());
 sql.prepare("INSERT INTO sessions(token_hash,user_id,expires) VALUES('disposable-session','disposable',?)").run(Date.now()+60000);
+// A password reset must also release this account's exhausted login counters.
+const originalIp=ip;ip='192.0.2.30';
+for(const login of [' tf-disposable ','Disposable@Example.Test']){
+ for(let attempt=0;attempt<12;attempt++)assert.equal((await post({action:'login',role:'student',login,password:'incorrect-password'})).status,401);
+ assert.equal((await post({action:'login',role:'student',login,password:'disposable-password-2026'})).status,429);
+}
+await auth.limited('login:TF-UNRELATED',12,15*60000);
+await auth.limited('forgot:disposable@example.test',3,15*60000);
+const resetBuckets=await Promise.all(['login:TF-DISPOSABLE','login:DISPOSABLE@EXAMPLE.TEST'].map(auth.digest));
+const limitsBeforeReset=sql.prepare('SELECT * FROM auth_limits ORDER BY bucket').all();
 let managed=await admin.POST(new Request('https://tufi.test/api/admin',{method:'POST',headers:{origin:'https://tufi.test'},body:JSON.stringify({action:'resetPassword',id:'disposable'})}));let managedBody=await managed.json();assert.equal(managed.status,200);assert.equal(managedBody.temporary.length,18);assert.match(managedBody.temporary,/^[A-Za-z0-9]+$/);assert.equal(sql.prepare("SELECT COUNT(*) n FROM sessions WHERE user_id='disposable'").get().n,0);assert.equal(await auth.verifyPassword(managedBody.temporary,sql.prepare("SELECT password_hash FROM accounts WHERE user_id='disposable'").get().password_hash),true);
-const temporaryLogin=await post({action:'login',role:'admin',login:'TF-DISPOSABLE',password:managedBody.temporary});assert.equal(temporaryLogin.status,200);assert.equal(temporaryLogin.body.account.role,'student');cookie=ownerCookie;globalThis.testHeaders.set('cookie',ownerCookie);
+const limitsAfterReset=sql.prepare('SELECT * FROM auth_limits ORDER BY bucket').all();
+const temporaryLogin=await post({action:'login',role:'admin',login:'TF-DISPOSABLE',password:managedBody.temporary});assert.equal(temporaryLogin.status,200,'A fresh temporary password must work immediately after an account login lockout');assert.equal(temporaryLogin.body.account.role,'student');
+assert.equal(managedBody.loginId,'TF-DISPOSABLE');
+assert.deepEqual(limitsAfterReset,limitsBeforeReset.filter(row=>!resetBuckets.includes(row.bucket)),'Reset must preserve IP, recovery and unrelated-account limits exactly');
+assert.equal((await post({action:'login',role:'student',login:'Disposable@Example.Test',password:managedBody.temporary})).status,200);
+const firstTemporary=managedBody.temporary,firstTemporarySession=cookie;
+cookie=ownerCookie;globalThis.testHeaders.set('cookie',ownerCookie);
+managed=await admin.POST(new Request('https://tufi.test/api/admin',{method:'POST',headers:{origin:'https://tufi.test'},body:JSON.stringify({action:'resetPassword',id:'disposable'})}));managedBody=await managed.json();assert.equal(managed.status,200);
+assert.equal(sql.prepare("SELECT COUNT(*) n FROM sessions WHERE user_id='disposable'").get().n,0);
+globalThis.testHeaders.set('cookie',firstTemporarySession);assert.equal(await auth.getCurrentUser(),null);
+assert.equal((await post({action:'login',role:'student',login:'TF-DISPOSABLE',password:firstTemporary})).status,401);
+assert.equal((await post({action:'login',role:'student',login:'TF-DISPOSABLE',password:managedBody.temporary})).status,200);
+assert.equal((await post({action:'login',role:'student',login:'disposable@example.test',password:managedBody.temporary})).status,200);
+// Unverified addresses are not valid aliases and must not release another bucket.
+sql.prepare("UPDATE accounts SET email='pending@example.test',email_verified=0 WHERE user_id='disposable'").run();
+await auth.limited('login:PENDING@EXAMPLE.TEST',12,15*60000);
+const pendingBucket=await auth.digest('login:PENDING@EXAMPLE.TEST'),pendingLimit=sql.prepare('SELECT * FROM auth_limits WHERE bucket=?').get(pendingBucket);
+cookie=ownerCookie;globalThis.testHeaders.set('cookie',ownerCookie);
+managed=await admin.POST(new Request('https://tufi.test/api/admin',{method:'POST',headers:{origin:'https://tufi.test'},body:JSON.stringify({action:'resetPassword',id:'disposable'})}));assert.equal(managed.status,200);
+assert.deepEqual(sql.prepare('SELECT * FROM auth_limits WHERE bucket=?').get(pendingBucket),pendingLimit);
+ip=originalIp;
+console.log('PASS: admin reset unlocks only account ID and verified email, preserves other limits, invalidates old passwords and revokes sessions.');
 managed=await admin.POST(new Request('https://tufi.test/api/admin',{method:'POST',headers:{origin:'https://tufi.test'},body:JSON.stringify({action:'deleteUser',id:'disposable'})}));assert.equal(managed.status,200);assert.equal(sql.prepare("SELECT COUNT(*) n FROM profiles WHERE id='disposable'").get().n,0);assert.equal(sql.prepare("SELECT COUNT(*) n FROM accounts WHERE user_id='disposable'").get().n,0);
 const approval=await admin.POST(new Request('https://tufi.test/api/admin',{method:'POST',headers:{origin:'https://tufi.test'},body:JSON.stringify({action:'user',id:p.id,role:'student',status:'approved',revision:0})}));assert.equal(approval.status,200);
 const approved=await post({action:'login',role:'student',login:studentId.toLowerCase(),password});assert.equal(approved.body.account.status,'approved');assert.equal((await admin.GET()).status,403);
@@ -109,4 +146,6 @@ assert.equal((await post({action:'forgot',email:'bad@'})).status,400);
 assert.equal((await post({action:'forgot',email:'user@escola.example.test'},'https://evil.test')).status,403);
 console.log('PASS: verified email login, password reset, expiry/replay, session revocation, preserved approval, email changes, admin recovery and provider failure.');
 console.log('PASS: real password derivation, unique IDs, automatic registration, admin isolation, student/teacher denial, CSRF, logout/revocation, expiry, legacy linking and login throttling.');
+await (await import('./password-lifecycle.mjs')).testPasswordLifecycle({auth,route,admin,teacher:teacherRoute,sql});
+if(process.argv.includes('--browser'))await (await import('./auth-browser.mjs')).testAuthBrowser({auth,route,admin,teacher:teacherRoute,game,sql});
 sql.close();rmSync(temp,{recursive:true,force:true});

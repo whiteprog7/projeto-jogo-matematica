@@ -9,7 +9,9 @@ writeFileSync(path.join(temp,'content.mjs'),compile(readFileSync('lib/content.ts
 writeFileSync(path.join(temp,'server.mjs'),compile(readFileSync('lib/server.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env={get DB(){return globalThis.testDB},ADMIN_PROFILE_ID:'owner'};")));
 let src=readFileSync('app/api/game/route.ts','utf8').replace("import {getCurrentUser as getChatGPTUser} from '@/lib/auth';","const getChatGPTUser=async()=>globalThis.testUser;").replace("from '@/lib/server'","from './server.mjs'").replace("from '@/lib/content'","from './content.mjs'").replace("from '@/lib/adventure'","from './adventure.mjs'");
 writeFileSync(path.join(temp,'route.mjs'),compile(src));
-writeFileSync(path.join(temp,'admin.mjs'),compile(readFileSync('app/api/admin/route.ts','utf8').replace("import {getCurrentUser as getChatGPTUser,hashPassword} from '@/lib/auth';","const getChatGPTUser=async()=>globalThis.testUser;const hashPassword=async password=>'test-'+password;").replace("from '@/lib/server'","from './server.mjs'")));
+writeFileSync(path.join(temp,'auth.mjs'),"export const getCurrentUser=async()=>globalThis.testUser;export const hashPassword=async password=>'test-'+password;export const digest=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),v=>v.toString(16).padStart(2,'0')).join('');");
+writeFileSync(path.join(temp,'password-reset.mjs'),compile(readFileSync('lib/password-reset.ts','utf8').replace("from './server'","from './server.mjs'").replace("from './auth'","from './auth.mjs'")));
+writeFileSync(path.join(temp,'admin.mjs'),compile(readFileSync('app/api/admin/route.ts','utf8').replace("from '@/lib/auth'","from './auth.mjs'").replace("from '@/lib/password-reset'","from './password-reset.mjs'").replace("from '@/lib/server'","from './server.mjs'")));
 const sql=new DatabaseSync(':memory:');for(const file of readdirSync('drizzle').filter(f=>f.endsWith('.sql')))sql.exec(readFileSync('drizzle/'+file,'utf8'));
 globalThis.testDB={async batch(statements){sql.exec('BEGIN');try{const out=[];for(const stmt of statements)out.push(await stmt.execute());sql.exec('COMMIT');return out}catch(e){sql.exec('ROLLBACK');throw e}},prepare(query){let args=[];const stmt=sql.prepare(query);return {async execute(){if(/^SELECT/i.test(query))return {results:stmt.all(...args),meta:{changes:0}};const r=stmt.run(...args);return {results:[],meta:{changes:Number(r.changes)}}},bind(...a){args=a;return this},async first(){return stmt.get(...args)||null},async all(){return {results:stmt.all(...args)}},async run(){const r=stmt.run(...args);return {meta:{changes:Number(r.changes)}}}}}};
 const {GET,POST}=await import('file://'+path.join(temp,'route.mjs'));const {makeQuestion,publicQuestion}=await import('file://'+path.join(temp,'content.mjs'));
@@ -45,4 +47,33 @@ const klass=sql.prepare('SELECT * FROM classes WHERE code=?').get(c2.code);asser
 identity('bob');assert.equal((await adminPost({action:'rotateCode',id:klass.id})).status,403);
 const {journey,achievements,worldStories}=await import('file://'+path.join(temp,'adventure.mjs'));assert.equal(journey([]).percent,0);const all=Array.from({length:6},(_,region)=>({region,best:500,visits:1,finished:1,correct:5}));assert.equal(journey(all).percent,86);assert.equal(journey(all).expansionUnlocked,true);assert.equal(achievements(all).filter(x=>x.earned).length,6);assert.equal(journey([...all,{region:6,best:500,visits:1,finished:1,correct:5}]).percent,100);assert.equal(journey([{region:4,best:0,visits:1}]).unlocked[4],true);assert.equal(worldStories.length,7);assert.equal(new Set(worldStories.map(story=>story.title)).size,7);assert.ok(worldStories.every(story=>story.subtitle&&story.lines.length===3&&story.lines.every(line=>line.length>40)));
 for(let region=0;region<7;region++)for(let stage=0;stage<5;stage++)for(let n=0;n<100;n++){const q=makeQuestion(region,stage);assert.equal(q.options.length,4);assert.equal(new Set(q.options).size,4);assert.ok(q.text&&q.explanation);assert.ok(q.correct>=0&&q.correct<4);assert.equal('correct' in publicQuestion(q),false)}
+// Complete actual missions through the API, including an abandoned replay like the reported case.
+identity('journey-test');await post({action:'profile',name:'Explorador de teste'});await approve('journey-test');
+assert.equal((await post({action:'start',region:6})).status,403);
+for(let region=0;region<7;region++){
+ const mission=await post({action:'start',region});assert.equal(mission.status,200);
+ const questions=JSON.parse(sql.prepare('SELECT questions FROM runs WHERE id=?').get(mission.id).questions);
+ for(let step=0;step<5;step++){const result=await post({action:'answer',id:mission.id,step,choice:questions[step].correct});assert.equal(result.status,200);assert.equal(result.count,step+1);assert.equal(result.done,step===4)}
+ const progress=await get('');assert.equal(progress.journey.best[region],500);assert.equal(progress.journey.expansionUnlocked,region>=5);
+ if(region===2)await post({action:'start',region:2});
+ if(region===5){assert.equal(progress.journey.next,6);assert.equal(progress.journey.baseXp,3000);assert.equal((await get('?view=active')).run.region,2);assert.equal(progress.achievements.find(a=>a.id==='seventh-signal').earned,true)}
+}
+assert.equal((await get('')).journey.percent,100);assert.equal((await get('')).journey.mastered,7);
+const minimum=all.map(s=>({...s,best:400,correct:4}));assert.equal(journey(minimum).expansionUnlocked,false);
+assert.equal(journey(minimum.map(s=>({...s,best:s.region<2?500:400,correct:s.region===5?5:4}))).expansionUnlocked,true);
+assert.equal(journey(minimum.map(s=>({...s,best:s.region<2?500:400}))).expansionUnlocked,false);
+// Existing profiles keep their gear and history when outfit storage is introduced.
+const legacy=new DatabaseSync(':memory:');for(const file of readdirSync('drizzle').filter(f=>f.endsWith('.sql')&&!f.startsWith('0004_')).sort())legacy.exec(readFileSync('drizzle/'+file,'utf8'));
+legacy.exec("INSERT INTO profiles(id,name,gear,status) VALUES('existing','Existing player',8,'approved'); INSERT INTO runs(id,user_id,region,questions,started,score,correct,done,step) VALUES('saved','existing',0,'[]',1,500,5,1,5)");
+legacy.exec(readFileSync('drizzle/0004_tufi_outfits.sql','utf8'));assert.equal(legacy.prepare("SELECT outfit FROM profiles WHERE id='existing'").get().outfit,0);assert.equal(legacy.prepare("SELECT gear FROM profiles WHERE id='existing'").get().gear,8);assert.equal(legacy.prepare("SELECT score FROM runs WHERE id='saved'").get().score,500);legacy.close();
+identity('bob');for(const outfit of [1,2,-1,99,'1'])assert.equal((await post({action:'outfit',outfit})).status,400);for(const gear of [9,10,11,12])assert.equal((await post({action:'gear',gear})).status,400);
+identity('journey-test');for(const gear of [9,10,11,12]){assert.equal((await post({action:'gear',gear})).status,200);assert.equal((await get('')).profile.gear,gear)}
+const savedOutfit=await post({action:'outfit',outfit:2});assert.equal(savedOutfit.status,200);assert.equal(savedOutfit.outfit,2);assert.equal((await get('')).profile.outfit,2);assert.equal((await get('')).profile.gear,12);
+await post({action:'gear',gear:9});assert.equal((await get('')).profile.outfit,2);await post({action:'outfit',outfit:1});assert.equal((await get('')).profile.gear,9);
+assert.equal((await post({action:'bonus',id:'unused',step:0,kind:'golden-key'})).status,403);
+identity('bob');await approve('bob','student','blocked');assert.equal((await post({action:'outfit',outfit:0})).status,403);await approve('bob');
+console.log('PASS: outfit migration preserves history, locked items rejected, independent saved gear/outfit, invalid outfit and blocked-account rejection.');
+console.log('PASS: full API journey, 35/35 correct answers, secret-world lock/unlock, abandoned replay, persisted 100% completion and exact unlock boundaries.');
+if(process.argv.includes('--browser'))await (await import('./journey-browser.mjs')).testJourney({get,post,sql,identity,approve});
+if(process.argv.includes('--browser')||process.argv.includes('--items-browser'))await (await import('./items-browser.mjs')).testItems({get,post,sql,identity});
 sql.close();rmSync(temp,{recursive:true});console.log('PASS: authentication, role/ownership checks, class isolation, mission flow, replay protection, ranking eligibility, hidden expansion rules, stored progress, and 3500 generated questions.');
