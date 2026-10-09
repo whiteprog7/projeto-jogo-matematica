@@ -47,3 +47,8 @@ next-env.d.ts
 
 *.tsbuildinfo
 !.env.example
+
+# Private setup files for independent hosting.
+/portable-private/
+/wrangler.portable.json
+.dev.vars*

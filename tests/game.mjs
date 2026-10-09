@@ -68,11 +68,12 @@ legacy.exec("INSERT INTO profiles(id,name,gear,status) VALUES('existing','Existi
 legacy.exec(readFileSync('drizzle/0004_tufi_outfits.sql','utf8'));assert.equal(legacy.prepare("SELECT outfit FROM profiles WHERE id='existing'").get().outfit,0);assert.equal(legacy.prepare("SELECT gear FROM profiles WHERE id='existing'").get().gear,8);assert.equal(legacy.prepare("SELECT score FROM runs WHERE id='saved'").get().score,500);legacy.close();
 identity('bob');for(const outfit of [1,2,-1,99,'1'])assert.equal((await post({action:'outfit',outfit})).status,400);for(const gear of [9,10,11,12])assert.equal((await post({action:'gear',gear})).status,400);
 identity('journey-test');for(const gear of [9,10,11,12]){assert.equal((await post({action:'gear',gear})).status,200);assert.equal((await get('')).profile.gear,gear)}
-assert.equal((await post({action:'outfit',outfit:2})).status,200);assert.equal((await get('')).profile.outfit,2);assert.equal((await get('')).profile.gear,12);
+const savedOutfit=await post({action:'outfit',outfit:2});assert.equal(savedOutfit.status,200);assert.equal(savedOutfit.outfit,2);assert.equal((await get('')).profile.outfit,2);assert.equal((await get('')).profile.gear,12);
 await post({action:'gear',gear:9});assert.equal((await get('')).profile.outfit,2);await post({action:'outfit',outfit:1});assert.equal((await get('')).profile.gear,9);
 assert.equal((await post({action:'bonus',id:'unused',step:0,kind:'golden-key'})).status,403);
 identity('bob');await approve('bob','student','blocked');assert.equal((await post({action:'outfit',outfit:0})).status,403);await approve('bob');
 console.log('PASS: outfit migration preserves history, locked items rejected, independent saved gear/outfit, invalid outfit and blocked-account rejection.');
 console.log('PASS: full API journey, 35/35 correct answers, secret-world lock/unlock, abandoned replay, persisted 100% completion and exact unlock boundaries.');
-if(process.argv.includes('--browser')){await (await import('./journey-browser.mjs')).testJourney({get,post,sql,identity,approve});await (await import('./items-browser.mjs')).testItems({get,post,sql,identity})}
+if(process.argv.includes('--browser'))await (await import('./journey-browser.mjs')).testJourney({get,post,sql,identity,approve});
+if(process.argv.includes('--browser')||process.argv.includes('--items-browser'))await (await import('./items-browser.mjs')).testItems({get,post,sql,identity});
 sql.close();rmSync(temp,{recursive:true});console.log('PASS: authentication, role/ownership checks, class isolation, mission flow, replay protection, ranking eligibility, hidden expansion rules, stored progress, and 3500 generated questions.');

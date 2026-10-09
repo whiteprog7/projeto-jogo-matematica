@@ -1,3 +1,7 @@
+> v0.12.1-beta: seleção de traje confirmada pela gravação, indicação de envio e erro no guarda-roupa. Consultas antigas não substituem uma seleção já confirmada.
+>
+> **Cópia para outro domínio ou TV Box:** comece em [docs/PORTABILIDADE.md](docs/PORTABILIDADE.md). O código completo usa servidor e banco; o HTML offline é treino separado com seis mundos. Contas existentes e segredos não estão no repositório.
+
 > v0.5.0-beta: login por e-mail confirmado, confirmação de endereço e redefinição de senha. Envio real depende de Resend e remetente autorizado; veja [configuração e limites](docs/RECUPERACAO_EMAIL.md).
 
 > v0.10.0-beta: cada um dos sete mundos ganhou uma abertura narrativa própria, apresentada pelo mascote Tufi aprovado pelo responsável. A história pode ser lida em voz alta pelo navegador antes de iniciar a missão.
